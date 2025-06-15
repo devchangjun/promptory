@@ -1,10 +1,6 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useUser, useSession } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
-import { AlertTriangle, Trash2, Pencil, X, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import AdminPromptsClient from "./AdminPromptsClient";
 
 interface Prompt {
   id: string;
@@ -14,179 +10,38 @@ interface Prompt {
   created_at?: string;
 }
 
-export default function AdminPromptsPage() {
-  const { isSignedIn, user, isLoaded } = useUser();
-  const { session } = useSession();
-  const isAdmin = isSignedIn && user?.publicMetadata?.role === "admin";
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-
-  function createClerkSupabaseClient() {
-    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      accessToken: async () => session?.getToken() ?? null,
-    });
-  }
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    const client = createClerkSupabaseClient();
-    async function loadPrompts() {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await client.from("prompts").select("id, title, content, user_id, created_at");
-      console.log("data", data);
-      if (error) setError(error.message);
-      else setPrompts(data as Prompt[]);
-      setLoading(false);
-    }
-    loadPrompts();
-  }, [isAdmin]);
-
-  async function handleDelete(id: string) {
-    if (!confirm("정말로 삭제하시겠습니까?")) return;
-    const client = createClerkSupabaseClient();
-    const { error } = await client.from("prompts").delete().eq("id", id);
-    if (!error) setPrompts((prompts) => prompts.filter((p) => p.id !== id));
-    else alert("삭제 실패: " + error.message);
-  }
-
-  async function reloadPrompts() {
-    const client = createClerkSupabaseClient();
-    const { data, error } = await client.from("prompts").select("id, title, content, user_id, created_at");
-    if (!error) setPrompts(data as Prompt[]);
-  }
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) return;
-    const client = createClerkSupabaseClient();
-    const { error } = await client.from("prompts").insert({ title: newTitle, content: newContent });
-    if (!error) {
-      setNewTitle("");
-      setNewContent("");
-      reloadPrompts();
-    } else {
-      alert("등록 실패: " + error.message);
-    }
-  }
-
-  function startEdit(prompt: Prompt) {
-    setEditingId(prompt.id);
-    setEditTitle(prompt.title);
-    setEditContent(prompt.content);
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setEditTitle("");
-    setEditContent("");
-  }
-
-  async function handleEditSave(id: string) {
-    const client = createClerkSupabaseClient();
-    const { error } = await client.from("prompts").update({ title: editTitle, content: editContent }).eq("id", id);
-    if (!error) {
-      setEditingId(null);
-      reloadPrompts();
-    } else {
-      alert("수정 실패: " + error.message);
-    }
-  }
-
-  if (!isLoaded) {
-    return <div className="py-20 text-center">로딩 중...</div>;
-  }
+export default async function AdminPromptsPage() {
+  const user = await currentUser();
+  const isAdmin = user?.publicMetadata?.role === "admin";
 
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertTriangle className="size-10 text-destructive mb-4" />
+        <svg
+          className="size-10 text-destructive mb-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
         <h2 className="text-xl font-bold mb-2">403 - 권한 없음</h2>
         <p className="text-muted-foreground">이 페이지에 접근할 권한이 없습니다.</p>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-4xl mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">프롬프트 관리</h1>
-      <form onSubmit={handleAdd} className="flex gap-2 mb-6 items-end">
-        <Input placeholder="제목" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-48" />
-        <Input
-          placeholder="내용"
-          value={newContent}
-          onChange={(e) => setNewContent(e.target.value)}
-          className="flex-1"
-        />
-        <Button type="submit" variant="default" disabled={!newTitle.trim() || !newContent.trim()}>
-          등록
-        </Button>
-      </form>
-      {loading && <p>로딩 중...</p>}
-      {error && <p className="text-destructive">에러: {error}</p>}
-      {!loading && prompts.length === 0 && <p>등록된 프롬프트가 없습니다.</p>}
-      {!loading && prompts.length > 0 && (
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-muted text-foreground">
-              <th className="p-2">ID</th>
-              <th className="p-2">제목</th>
-              <th className="p-2">내용</th>
-              <th className="p-2">작성자</th>
-              <th className="p-2">생성일</th>
-              <th className="p-2">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prompts.map((prompt) => (
-              <tr key={prompt.id} className="border-b">
-                <td className="p-2 font-mono text-xs">{prompt.id}</td>
-                <td className="p-2 max-w-[180px] truncate">
-                  {editingId === prompt.id ? (
-                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-40" />
-                  ) : (
-                    prompt.title
-                  )}
-                </td>
-                <td className="p-2 max-w-[240px] truncate">
-                  {editingId === prompt.id ? (
-                    <Input value={editContent} onChange={(e) => setEditContent(e.target.value)} />
-                  ) : (
-                    prompt.content
-                  )}
-                </td>
-                <td className="p-2 font-mono text-xs">{prompt.user_id}</td>
-                <td className="p-2">{prompt.created_at?.slice(0, 10)}</td>
-                <td className="p-2 flex gap-1">
-                  {editingId === prompt.id ? (
-                    <>
-                      <Button size="sm" variant="default" onClick={() => handleEditSave(prompt.id)}>
-                        <Check className="size-4 mr-1" /> 저장
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={cancelEdit}>
-                        <X className="size-4 mr-1" /> 취소
-                      </Button>
-                    </>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={() => startEdit(prompt)}>
-                      <Pencil className="size-4 mr-1" /> 수정
-                    </Button>
-                  )}
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(prompt.id)}>
-                    <Trash2 className="size-4 mr-1" /> 삭제
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
+  // Supabase 클라이언트 생성 (서비스 키 사용 권장, 여기선 anon key)
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+  const { data } = await supabase.from("prompts").select("id, title, content, user_id, created_at");
+
+  const prompts = (data as Prompt[]) || [];
+
+  return <AdminPromptsClient initialPrompts={prompts} />;
 }
