@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Header";
+import UserSyncer from "@/components/UserSyncer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
         <ClerkProvider>
           <Header />
           {children}
+          <UserSyncer />
           <Toaster />
         </ClerkProvider>
       </body>

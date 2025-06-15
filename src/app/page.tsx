@@ -15,6 +15,7 @@ import {
 import { Mail, LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import TaskForm from "@/components/TaskForm";
 
 interface EmailDialogProps {
   email: string;
@@ -97,6 +98,11 @@ export default function Home() {
           </form>
           {open && <EmailDialog email={email} onClose={() => setOpen(false)} />}
         </Dialog>
+        <div className="w-full mt-8">
+          <h2 className="text-lg font-semibold mb-2">Task 추가 테스트</h2>
+          <TaskForm />
+          <p className="text-sm text-muted-foreground mt-2">로그인 후 Task를 추가해보세요.</p>
+        </div>
       </main>
       <footer className="flex gap-6 flex-wrap items-center justify-center py-6 w-full border-t mt-8">
         <a
