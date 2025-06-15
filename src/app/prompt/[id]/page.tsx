@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { FileText } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import PromptContentWithCopy from "./PromptContentWithCopy";
+import PromptLikeButton from "./PromptLikeButton";
 
 interface Prompt {
   id: string;
@@ -52,6 +53,9 @@ export default async function PromptDetailPage({ params }: PageProps) {
             {categoryName}
           </span>
         )}
+        <span className="ml-2">
+          <PromptLikeButton promptId={prompt.id} />
+        </span>
       </h1>
       <PromptContentWithCopy content={prompt.content} />
       <div className="flex gap-4 text-xs text-gray-400 mt-6">

@@ -5,6 +5,7 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FilterBar from "./FilterBar";
 import { Suspense } from "react";
+import PromptCard from "./PromptCard";
 
 interface Prompt {
   id: string;
@@ -59,6 +60,20 @@ function getPageUrl({ page, category, q }: { page: number; category?: string; q?
   return `/prompt${params.toString() ? `?${params}` : ""}`;
 }
 
+async function getLikeCounts(promptIds: string[]): Promise<Record<string, number>> {
+  if (promptIds.length === 0) return {};
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const { data } = await supabase.from("likes").select("prompt_id");
+  console.log("data", data);
+  const counts: Record<string, number> = {};
+  data?.forEach((row: { prompt_id: string }) => {
+    if (promptIds.includes(row.prompt_id)) {
+      counts[row.prompt_id] = (counts[row.prompt_id] || 0) + 1;
+    }
+  });
+  return counts;
+}
+
 export default async function PromptPage({
   searchParams,
 }: {
@@ -69,6 +84,7 @@ export default async function PromptPage({
   const { prompts, total } = await getPrompts({ category: searchParams.category, q: searchParams.q, page });
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const likeCounts = await getLikeCounts(prompts.map((p) => p.id));
 
   return (
     <div className="max-w-3xl mx-auto py-10">
@@ -88,25 +104,12 @@ export default async function PromptPage({
       <div className="flex flex-col gap-4 mt-6">
         {prompts.length === 0 && <p className="text-muted-foreground">프롬프트가 없습니다.</p>}
         {prompts.map((p) => (
-          <Link
+          <PromptCard
             key={p.id}
-            href={`/prompt/${p.id}`}
-            className="p-4 border rounded-lg shadow-sm bg-card transition hover:bg-accent/40 focus:outline-none focus:ring-2 focus:ring-primary/40 block"
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <div className="font-semibold text-lg truncate">{p.title}</div>
-              {p.category_id && categoryMap[p.category_id] && (
-                <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium border border-primary/20">
-                  {categoryMap[p.category_id]}
-                </span>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground line-clamp-2 mb-1">{p.content}</div>
-            <div className="flex justify-between text-xs text-gray-400">
-              <span>작성자: {p.user_id}</span>
-              <span>{p.created_at?.slice(0, 10)}</span>
-            </div>
-          </Link>
+            prompt={p}
+            categoryName={p.category_id ? categoryMap[p.category_id] : undefined}
+            likeCount={likeCounts[p.id] || 0}
+          />
         ))}
       </div>
       {totalPages > 1 && (
