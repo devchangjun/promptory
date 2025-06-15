@@ -26,22 +26,49 @@ async function getCategories(): Promise<Category[]> {
   return data || [];
 }
 
-async function getPrompts({ category, q }: { category?: string; q?: string }): Promise<Prompt[]> {
+const PAGE_SIZE = 10;
+
+async function getPrompts({
+  category,
+  q,
+  page,
+}: {
+  category?: string;
+  q?: string;
+  page?: number;
+}): Promise<{ prompts: Prompt[]; total: number }> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   let query = supabase
     .from("prompts")
-    .select("id, title, content, user_id, created_at, category_id")
+    .select("id, title, content, user_id, created_at, category_id", { count: "exact" })
     .order("created_at", { ascending: false });
   if (category) query = query.eq("category_id", category);
   if (q) query = query.ilike("title", `%${q}%`);
-  const { data } = await query;
-  return data || [];
+  const from = ((page || 1) - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  query = query.range(from, to);
+  const { data, count } = await query;
+  return { prompts: data || [], total: count || 0 };
 }
 
-export default async function PromptPage({ searchParams }: { searchParams: { category?: string; q?: string } }) {
+function getPageUrl({ page, category, q }: { page: number; category?: string; q?: string }) {
+  const params = new URLSearchParams();
+  if (category) params.set("category", category);
+  if (q) params.set("q", q);
+  if (page > 1) params.set("page", String(page));
+  return `/prompt${params.toString() ? `?${params}` : ""}`;
+}
+
+export default async function PromptPage({
+  searchParams,
+}: {
+  searchParams: { category?: string; q?: string; page?: string };
+}) {
   const categories = await getCategories();
-  const prompts = await getPrompts({ category: searchParams.category, q: searchParams.q });
+  const page = Number(searchParams.page) || 1;
+  const { prompts, total } = await getPrompts({ category: searchParams.category, q: searchParams.q, page });
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="max-w-3xl mx-auto py-10">
@@ -82,6 +109,37 @@ export default async function PromptPage({ searchParams }: { searchParams: { cat
           </Link>
         ))}
       </div>
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-8 gap-2">
+          <Link href={getPageUrl({ page: Math.max(1, page - 1), category: searchParams.category, q: searchParams.q })}>
+            <Button variant="outline" size="sm" disabled={page === 1}>
+              이전
+            </Button>
+          </Link>
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <Link key={i + 1} href={getPageUrl({ page: i + 1, category: searchParams.category, q: searchParams.q })}>
+              <Button
+                variant={page === i + 1 ? "default" : "outline"}
+                size="sm"
+                className={page === i + 1 ? "font-bold" : ""}
+              >
+                {i + 1}
+              </Button>
+            </Link>
+          ))}
+          <Link
+            href={getPageUrl({
+              page: Math.min(totalPages, page + 1),
+              category: searchParams.category,
+              q: searchParams.q,
+            })}
+          >
+            <Button variant="outline" size="sm" disabled={page === totalPages}>
+              다음
+            </Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

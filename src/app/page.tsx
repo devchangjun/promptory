@@ -1,5 +1,7 @@
 import { FileText } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface Prompt {
   id: string;
@@ -44,6 +46,15 @@ export default async function Home() {
               </div>
             ))}
           </div>
+          {latestPrompts.length > 0 && (
+            <div className="flex justify-center mt-6">
+              <Link href="/prompt">
+                <Button variant="outline" className="px-6">
+                  더보기
+                </Button>
+              </Link>
+            </div>
+          )}
         </section>
       </main>
     </div>
