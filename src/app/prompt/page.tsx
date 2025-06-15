@@ -1,7 +1,7 @@
 import { FileText } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FilterBar from "./FilterBar";
 import { Suspense } from "react";

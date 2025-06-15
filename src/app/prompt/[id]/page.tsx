@@ -13,11 +13,6 @@ interface Prompt {
   created_at?: string;
 }
 
-interface Category {
-  id: string;
-  name: string;
-}
-
 async function getPrompt(id: string): Promise<Prompt | null> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { data } = await supabase

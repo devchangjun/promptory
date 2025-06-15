@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useUser, UserButton, SignInButton } from "@clerk/nextjs";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Home, FileText, BookOpen } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Header() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
 
   return (
     <header className="w-full h-16 flex items-center justify-between px-6 border-b bg-background/80 backdrop-blur-md sticky top-0 z-50">
@@ -27,8 +28,13 @@ export default function Header() {
         </Link>
       </nav>
       <div className="flex items-center gap-2">
-        {isSignedIn ? (
-          <UserButton afterSignOutUrl="/" />
+        {isSignedIn && user ? (
+          <Link href="/mypage">
+            <Avatar className="w-8 h-8 cursor-pointer">
+              <AvatarImage src={user.imageUrl} alt={user.username || user.emailAddresses[0]?.emailAddress} />
+              <AvatarFallback>{user.firstName?.[0] || "U"}</AvatarFallback>
+            </Avatar>
+          </Link>
         ) : (
           <SignInButton mode="modal">
             <Button variant="outline" size="sm">
