@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Mail, LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
 
 interface EmailDialogProps {
   email: string;
@@ -55,12 +56,16 @@ export default function Home() {
       </header>
       <main className="flex flex-col items-center gap-8 w-full max-w-md flex-1 justify-center">
         <div className="flex gap-4 w-full justify-center">
-          <Button variant="default" size="lg" className="w-1/2 flex gap-2 items-center justify-center">
-            <LogIn className="size-5" /> 로그인
-          </Button>
-          <Button variant="secondary" size="lg" className="w-1/2 flex gap-2 items-center justify-center">
-            <UserPlus className="size-5" /> 회원가입
-          </Button>
+          <SignInButton mode="modal">
+            <Button variant="default" size="lg" className="w-1/2 flex gap-2 items-center justify-center" type="button">
+              <LogIn className="size-5" /> 구글 로그인
+            </Button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <Button variant="secondary" size="lg" className="w-1/2 flex gap-2 items-center justify-center">
+              <UserPlus className="size-5" /> 회원가입
+            </Button>
+          </SignUpButton>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <form
