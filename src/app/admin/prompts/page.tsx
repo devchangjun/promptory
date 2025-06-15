@@ -40,6 +40,7 @@ export default function AdminPromptsPage() {
       setLoading(true);
       setError(null);
       const { data, error } = await client.from("prompts").select("id, title, content, user_id, created_at");
+      console.log("data", data);
       if (error) setError(error.message);
       else setPrompts(data as Prompt[]);
       setLoading(false);
