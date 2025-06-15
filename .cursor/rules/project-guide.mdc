@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 개발 가이드라인
+
+## 코드 컨벤션
+
+- React 컴포넌트는 항상 ParscalCase로 작성한다.
+- 모든 컴포넌트는 `ShadCn`을 사용한다.
+- 아이콘이 필요한 컴포넌트는 `react/icons`에서 사용한다.
+- 클라이언트 컴포넌트는 'use client'로 명시한다.
+- page.tsx나 layout.tsx는 서버사이드 렌더링을 위해 클라이언트 컴포넌트로 사용을 금지한다.
+- 타입이 필요한 컴포넌트는 `interface`로 타입을 명시한다.
+- Next.js에서는 하이드레이션 이슈 때문에 windows 객체를 항상 확인한다.
+
+## 스타일링
+
+- tailwind css v4를 사용한다.
+
+- tailwind css v4를 사용하기 전 context7 MCP를 통해서 최신버전 사용법을 익힌다.
