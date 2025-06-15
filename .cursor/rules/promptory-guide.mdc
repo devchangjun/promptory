@@ -1,0 +1,41 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Promptory 프로젝트 개발 가이드
+
+## 주요 구조
+- 메인 페이지: [src/app/page.tsx](mdc:src/app/page.tsx)
+- 프롬프트 전체 목록: [src/app/prompt/page.tsx](mdc:src/app/prompt/page.tsx)
+- 프롬프트 상세: [src/app/prompt/[id]/page.tsx](mdc:src/app/prompt/[id]/page.tsx)
+- 프롬프트 작성: [src/app/prompt/new/page.tsx](mdc:src/app/prompt/new/page.tsx), [src/app/prompt/new/PromptForm.tsx](mdc:src/app/prompt/new/PromptForm.tsx)
+- 관리자 프롬프트 관리: [src/app/admin/prompts/page.tsx](mdc:src/app/admin/prompts/page.tsx)
+
+## 인증/권한
+- Clerk로 인증, Supabase user_id는 Clerk JWT sub로 자동 관리
+- Supabase RLS 정책: SELECT는 모두 허용, INSERT/UPDATE/DELETE는 로그인 유저만 본인 데이터만 가능
+- 프롬프트 등록은 로그인 유저만 가능 ([PromptForm.tsx](mdc:src/app/prompt/new/PromptForm.tsx))
+
+## SSR/CSR 구분
+- 데이터 fetch가 필요한 페이지는 서버 컴포넌트(async function)로 구현
+- 클라이언트 상호작용(폼, 복사 등)은 별도 'use client' 컴포넌트로 분리
+
+## UI/스타일
+- ShadCn 컴포넌트, Tailwind CSS v4 적용
+- lucide-react 아이콘 사용
+- 프롬프트 카테고리는 뱃지로 표시
+
+## 프롬프트 관리 흐름
+- 전체 목록: /prompt ([page.tsx](mdc:src/app/prompt/page.tsx))
+- 상세: /prompt/[id] ([page.tsx](mdc:src/app/prompt/[id]/page.tsx))
+- 작성: /prompt/new ([page.tsx](mdc:src/app/prompt/new/page.tsx))
+- 관리: /admin/prompts ([page.tsx](mdc:src/app/admin/prompts/page.tsx))
+
+## Supabase RLS 정책 예시
+- SELECT: 누구나 허용
+- INSERT/UPDATE/DELETE: (auth.jwt()->>'sub') = user_id
+
+## 기타
+- 모든 주요 경로/컴포넌트는 ParscalCase, interface로 타입 명시
+- 환경변수는 .env에 정확히 설정 필요
