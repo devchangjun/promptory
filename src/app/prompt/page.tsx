@@ -77,11 +77,12 @@ async function getLikeCounts(promptIds: string[]): Promise<Record<string, number
 export default async function PromptPage({
   searchParams,
 }: {
-  searchParams: { category?: string; q?: string; page?: string };
+  searchParams: Promise<{ category?: string; q?: string; page?: string }>;
 }) {
+  const params = await searchParams;
   const categories = await getCategories();
-  const page = Number(searchParams.page) || 1;
-  const { prompts, total } = await getPrompts({ category: searchParams.category, q: searchParams.q, page });
+  const page = Number(params.page) || 1;
+  const { prompts, total } = await getPrompts({ category: params.category, q: params.q, page });
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const likeCounts = await getLikeCounts(prompts.map((p) => p.id));
@@ -99,7 +100,7 @@ export default async function PromptPage({
         </Link>
       </div>
       <Suspense fallback={<div className="mb-6">필터 로딩중...</div>}>
-        <FilterBar categories={categories} defaultCategory={searchParams.category} defaultQ={searchParams.q} />
+        <FilterBar categories={categories} defaultCategory={params.category} defaultQ={params.q} />
       </Suspense>
       <div className="flex flex-col gap-4 mt-6">
         {prompts.length === 0 && <p className="text-muted-foreground">프롬프트가 없습니다.</p>}
@@ -114,13 +115,13 @@ export default async function PromptPage({
       </div>
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 gap-2">
-          <Link href={getPageUrl({ page: Math.max(1, page - 1), category: searchParams.category, q: searchParams.q })}>
+          <Link href={getPageUrl({ page: Math.max(1, page - 1), category: params.category, q: params.q })}>
             <Button variant="outline" size="sm" disabled={page === 1}>
               이전
             </Button>
           </Link>
           {Array.from({ length: totalPages }).map((_, i) => (
-            <Link key={i + 1} href={getPageUrl({ page: i + 1, category: searchParams.category, q: searchParams.q })}>
+            <Link key={i + 1} href={getPageUrl({ page: i + 1, category: params.category, q: params.q })}>
               <Button
                 variant={page === i + 1 ? "default" : "outline"}
                 size="sm"
@@ -133,8 +134,8 @@ export default async function PromptPage({
           <Link
             href={getPageUrl({
               page: Math.min(totalPages, page + 1),
-              category: searchParams.category,
-              q: searchParams.q,
+              category: params.category,
+              q: params.q,
             })}
           >
             <Button variant="outline" size="sm" disabled={page === totalPages}>

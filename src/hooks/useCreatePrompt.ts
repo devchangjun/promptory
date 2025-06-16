@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Session } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface CreatePromptInput {
   title: string;
   content: string;
   category_id?: string | null;
-  session: Session | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  session: any | null;
 }
 
 export function useCreatePrompt() {
