@@ -1,5 +1,21 @@
 import Link from "next/link";
-import { Heart, FileText, Mail, BookOpen, Briefcase, Star } from "lucide-react";
+import {
+  Heart,
+  FileText,
+  Star,
+  Megaphone,
+  Code,
+  Youtube,
+  Palette,
+  User,
+  Lightbulb,
+  Instagram,
+  GraduationCap,
+  PenLine,
+  BadgeCheck,
+  TrendingUp,
+  HelpCircle,
+} from "lucide-react";
 
 interface Prompt {
   id: string;
@@ -16,12 +32,21 @@ interface Props {
   likeCount?: number;
 }
 
-// 카테고리별 색상/아이콘 예시
+// 카테고리별 색상/아이콘 (DB 기준)
 const categoryStyleMap: Record<string, { color: string; icon: React.ReactNode }> = {
-  블로그: { color: "bg-orange-100", icon: <FileText className="w-7 h-7 text-orange-400" /> },
-  이메일: { color: "bg-emerald-100", icon: <Mail className="w-7 h-7 text-emerald-400" /> },
-  자기소개서: { color: "bg-pink-100", icon: <BookOpen className="w-7 h-7 text-pink-400" /> },
-  사업계획서: { color: "bg-indigo-100", icon: <Briefcase className="w-7 h-7 text-indigo-400" /> },
+  마케팅: { color: "bg-yellow-100", icon: <Megaphone className="w-7 h-7 text-yellow-500" /> },
+  개발: { color: "bg-blue-100", icon: <Code className="w-7 h-7 text-blue-500" /> },
+  유튜브: { color: "bg-red-100", icon: <Youtube className="w-7 h-7 text-red-500" /> },
+  디자인: { color: "bg-pink-100", icon: <Palette className="w-7 h-7 text-pink-500" /> },
+  자기소개서: { color: "bg-rose-100", icon: <User className="w-7 h-7 text-rose-500" /> },
+  사업아이디어: { color: "bg-indigo-100", icon: <Lightbulb className="w-7 h-7 text-indigo-500" /> },
+  블로그: { color: "bg-orange-100", icon: <FileText className="w-7 h-7 text-orange-500" /> },
+  SNS: { color: "bg-fuchsia-100", icon: <Instagram className="w-7 h-7 text-fuchsia-500" /> },
+  교육: { color: "bg-green-100", icon: <GraduationCap className="w-7 h-7 text-green-500" /> },
+  문학: { color: "bg-violet-100", icon: <PenLine className="w-7 h-7 text-violet-500" /> },
+  취업: { color: "bg-cyan-100", icon: <BadgeCheck className="w-7 h-7 text-cyan-500" /> },
+  자기계발: { color: "bg-lime-100", icon: <TrendingUp className="w-7 h-7 text-lime-500" /> },
+  기타: { color: "bg-gray-100", icon: <HelpCircle className="w-7 h-7 text-gray-500" /> },
   기본: { color: "bg-purple-100", icon: <Star className="w-7 h-7 text-purple-400" /> },
 };
 

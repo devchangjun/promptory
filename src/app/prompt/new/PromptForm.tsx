@@ -63,7 +63,6 @@ export default function PromptForm({ categories }: Props) {
         required
         rows={6}
         className="rounded-md border border-input bg-background p-3 text-base resize-y min-h-[120px]"
-        maxLength={2000}
       />
       <select
         value={categoryId}
