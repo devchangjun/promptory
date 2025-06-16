@@ -15,6 +15,7 @@ interface Prompt {
 
 // 최신 프롬프트 3개
 async function getPrompts(): Promise<Prompt[]> {
+  console.log("start");
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { data } = await supabase
     .from("prompts")
