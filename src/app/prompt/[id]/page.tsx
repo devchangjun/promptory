@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { FileText } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
 import PromptContentWithCopy from "./PromptContentWithCopy";
 import PromptLikeButton from "./PromptLikeButton";
@@ -16,7 +17,7 @@ interface Prompt {
 }
 
 async function getPrompt(id: string): Promise<Prompt | null> {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase
     .from("prompts")
     .select("id, title, content, user_id, created_at, category_id")
@@ -27,7 +28,7 @@ async function getPrompt(id: string): Promise<Prompt | null> {
 
 async function getCategoryName(category_id?: string | null): Promise<string | null> {
   if (!category_id) return null;
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase.from("categories").select("name").eq("id", category_id).single();
   return data?.name || null;
 }

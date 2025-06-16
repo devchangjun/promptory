@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import AdminPromptsClient from "./AdminPromptsClient";
 
 interface Prompt {
@@ -37,7 +38,7 @@ export default async function AdminPromptsPage() {
   }
 
   // Supabase 클라이언트 생성 (서비스 키 사용 권장, 여기선 anon key)
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createServerComponentClient({ cookies });
 
   const { data } = await supabase.from("prompts").select("id, title, content, user_id, created_at");
 

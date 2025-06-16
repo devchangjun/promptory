@@ -1,5 +1,6 @@
 import { FileText } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ interface Category {
 }
 
 async function getCategories(): Promise<Category[]> {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase.from("categories").select("id, name");
   return data || [];
 }
@@ -38,7 +39,7 @@ async function getPrompts({
   q?: string;
   page?: number;
 }): Promise<{ prompts: Prompt[]; total: number }> {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createServerComponentClient({ cookies });
   let query = supabase
     .from("prompts")
     .select("id, title, content, user_id, created_at, category_id", { count: "exact" })
@@ -62,7 +63,7 @@ function getPageUrl({ page, category, q }: { page: number; category?: string; q?
 
 async function getLikeCounts(promptIds: string[]): Promise<Record<string, number>> {
   if (promptIds.length === 0) return {};
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase.from("likes").select("prompt_id");
   console.log("data", data);
   const counts: Record<string, number> = {};

@@ -1,4 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import { FileText } from "lucide-react";
 import PromptForm from "./PromptForm";
 
@@ -8,7 +9,7 @@ interface Category {
 }
 
 async function getCategories(): Promise<Category[]> {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase.from("categories").select("id, name");
   return data || [];
 }
