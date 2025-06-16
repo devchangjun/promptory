@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { Home, FileText, BookOpen } from "lucide-react";
+import { Home, FileText } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Header() {

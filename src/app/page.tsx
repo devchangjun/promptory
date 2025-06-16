@@ -49,30 +49,6 @@ async function getCategories(): Promise<Category[]> {
   return data || [];
 }
 
-const blogPosts = [
-  {
-    id: "1",
-    title: "AI 프롬프트 관리 꿀팁 5가지",
-    summary: "AI 프롬프트를 효과적으로 관리하는 방법을 소개합니다.",
-    url: "#",
-    date: "2024-06-01",
-  },
-  {
-    id: "2",
-    title: "Promptory로 협업하는 방법",
-    summary: "Promptory를 활용한 팀 협업 노하우를 알아보세요.",
-    url: "#",
-    date: "2024-05-28",
-  },
-  {
-    id: "3",
-    title: "AI 프롬프트 트렌드 2024",
-    summary: "2024년 주목해야 할 AI 프롬프트 트렌드를 정리했습니다.",
-    url: "#",
-    date: "2024-05-20",
-  },
-];
-
 export default async function Home() {
   const latestPrompts = await getPrompts();
   const categories = await getCategories();
