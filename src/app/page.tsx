@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PromptCard from "@/app/prompt/PromptCard";
+import { TextScramble } from "@/components/ui/TextScramble";
 
 interface Prompt {
   id: string;
@@ -58,16 +59,17 @@ async function getCategories(): Promise<Category[]> {
 }
 
 export default async function Home() {
-  console.log("home start");
   const latestPrompts = await getPrompts();
   const categories = await getCategories();
   const likeCounts = await getLikeCounts(latestPrompts.map((p) => p.id));
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-between p-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-background">
+    <div className="flex flex-col min-h-screen items-center justify-between font-[family-name:var(--font-geist-sans)] bg-background">
       <header className="w-full flex flex-col items-center gap-4 mt-16 mb-12">
-        <h1 className="text-4xl font-bold tracking-tight">Promptory</h1>
+        <h1 className="text-6xl font-bold tracking-tight">
+          <TextScramble text="Promptory" className="text-6xl font-bold tracking-tight" />
+        </h1>
         <p className="text-muted-foreground text-lg text-center max-w-xl mt-2">
           AI 프롬프트를 쉽고 빠르게 관리하고 공유하는 서비스입니다.
           <br />
@@ -75,11 +77,11 @@ export default async function Home() {
         </p>
         <div className="mt-6">
           <Link href="/prompt">
-            <Button className="px-8 py-2 text-base font-semibold">프롬프트 둘러보기</Button>
+            <Button className="px-8 py-2 text-base font-semibold cursor-pointer">프롬프트 둘러보기</Button>
           </Link>
         </div>
       </header>
-      <main className="flex flex-col items-center gap-12 w-full max-w-2xl flex-1 justify-center">
+      <main className="flex flex-col items-center gap-12 w-full max-w-2xl flex-1 mt-12">
         {/* 최신 프롬프트 */}
         <section className="w-full">
           <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
@@ -99,7 +101,7 @@ export default async function Home() {
           {latestPrompts.length > 0 && (
             <div className="flex justify-center mt-6">
               <Link href="/prompt">
-                <Button variant="outline" className="px-6">
+                <Button variant="outline" className="px-6 cursor-pointer">
                   더보기
                 </Button>
               </Link>
