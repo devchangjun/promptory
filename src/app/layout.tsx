@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Header";
+import SWRProvider from "@/components/SWRProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,9 +39,11 @@ export default function RootLayout({
         style={{ fontFamily: "Pretendard, var(--font-geist-sans), sans-serif" }}
       >
         <ClerkProvider>
-          <Header />
-          {children}
-          <Toaster />
+          <SWRProvider>
+            <Header />
+            {children}
+            <Toaster />
+          </SWRProvider>
         </ClerkProvider>
       </body>
     </html>
