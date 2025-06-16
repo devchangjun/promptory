@@ -21,6 +21,12 @@ async function getPrompts(): Promise<Prompt[]> {
     .select("id, title, content, created_at, user_id, category_id, like_count")
     .order("created_at", { ascending: false })
     .limit(3);
+
+  console.log("process.env.NEXT_PUBLIC_SUPABASE_URL!", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  console.log("process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  console.log("supabase", supabase);
+  console.log("메인 데이터 가지고오기");
+  console.log("data", data);
   return data || [];
 }
 

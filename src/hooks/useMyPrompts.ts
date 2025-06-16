@@ -20,6 +20,11 @@ export function useMyPrompts(userId: string) {
     if (error) throw error;
     return data as Prompt[];
   });
+
+  console.log("가지고오기");
+  console.log("data", data);
+  console.log("가지고오기 끝");
+
   return {
     prompts: data,
     isLoading,
