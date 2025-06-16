@@ -34,7 +34,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased font-[Pretendard, var(--font-geist-sans)]`}
+        className={`min-h-screen bg-linear-45 from-indigo-200 via-purple-200 to-pink-200 ${geistSans.variable} ${geistMono.variable} antialiased font-[Pretendard, var(--font-geist-sans)]`}
         style={{ fontFamily: "Pretendard, var(--font-geist-sans), sans-serif" }}
       >
         <ClerkProvider>
