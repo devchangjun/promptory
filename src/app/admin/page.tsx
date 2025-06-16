@@ -1,8 +1,53 @@
 "use client";
 import { useUser } from "@clerk/nextjs";
-import { AlertTriangle, FileText, Users, Layers } from "lucide-react";
+import { AlertTriangle, FileText, Users, Layers, MessageSquare, Package, Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+}
+
+function StatCard({ title, value, icon }: StatCardProps) {
+  return (
+    <Card>
+      <CardContent className="flex items-center p-6">
+        <div className="flex items-center justify-center size-12 rounded-full bg-primary/10 mr-4">{icon}</div>
+        <div>
+          <p className="text-sm text-muted-foreground">{title}</p>
+          <h3 className="text-2xl font-bold">{value}</h3>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface FeatureCardProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  href: string;
+  disabled?: boolean;
+}
+
+function FeatureCard({ title, description, icon, href, disabled }: FeatureCardProps) {
+  return (
+    <Link href={disabled ? "#" : href} className={disabled ? "cursor-not-allowed" : ""}>
+      <Card className={`hover:bg-muted/50 transition-colors ${disabled ? "opacity-50" : ""}`}>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center justify-center size-10 rounded-full bg-primary/10">{icon}</div>
+            <h3 className="text-lg font-semibold">{title}</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
 
 export default function AdminPage() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -23,24 +68,36 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">관리자 페이지</h1>
-      <div className="flex gap-3 mb-8">
-        <Link href="/admin/prompts">
-          <Button variant="outline" className="gap-2">
-            <FileText className="size-4" /> 프롬프트 관리
-          </Button>
-        </Link>
-        <Button variant="outline" className="gap-2" disabled>
-          <Layers className="size-4" /> 컬렉션 관리
-        </Button>
-        <Button variant="outline" className="gap-2" disabled>
-          <Users className="size-4" /> 유저 관리
-        </Button>
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">관리자 대시보드</h1>
+          <p className="text-muted-foreground mt-1">전체 데이터 및 운영 기능을 관리할 수 있습니다.</p>
+        </div>
       </div>
-      <p className="mb-4 text-muted-foreground">이곳에서 전체 데이터 및 운영 기능을 관리할 수 있습니다.</p>
-      <div className="p-6 rounded bg-muted text-foreground border">
-        <p>관리자 권한이 확인되었습니다. 앞으로 이곳에 관리 기능이 추가됩니다.</p>
+
+      {/* 기능 카드 섹션 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <FeatureCard
+          title="프롬프트 관리"
+          description="사진 관리 및 가격 관리"
+          icon={<FileText className="size-5 text-primary" />}
+          href="/admin/prompts"
+        />
+        <FeatureCard
+          title="컬렉션 관리"
+          description="컬렉션 및 카테고리 관리"
+          icon={<Layers className="size-5 text-primary" />}
+          href="/admin/collections"
+          disabled
+        />
+        <FeatureCard
+          title="유저 관리"
+          description="회원 관리 및 권한 설정"
+          icon={<Users className="size-5 text-primary" />}
+          href="/admin/users"
+          disabled
+        />
       </div>
     </div>
   );

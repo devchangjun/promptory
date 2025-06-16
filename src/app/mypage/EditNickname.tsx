@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useSession } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { PencilIcon, CheckIcon, XIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { createClient } from "@supabase/supabase-js";
 
 interface EditNicknameProps {
   userId: string;
@@ -11,56 +13,67 @@ interface EditNicknameProps {
 }
 
 export function EditNickname({ userId, currentNickname }: EditNicknameProps) {
-  const [editing, setEditing] = useState(false);
   const [nickname, setNickname] = useState(currentNickname);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { session } = useSession();
 
-  const handleSave = async () => {
-    setLoading(true);
-    setError(null);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nickname.trim() || nickname === currentNickname) return;
+
+    setIsLoading(true);
     try {
-      // Clerk API로 닉네임 업데이트 (예시)
-      // 실제 구현 시 Clerk SDK 또는 fetch로 PATCH 요청 필요
-      // await updateClerkUserNickname(userId, nickname);
-      setEditing(false);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
-      setError("닉네임 저장에 실패했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      const token = await session?.getToken({ template: "supabase" });
+      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+        global: {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        },
+      });
 
-  if (!editing) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="font-medium">{nickname}</span>
-        <Button size="icon" variant="ghost" onClick={() => setEditing(true)}>
-          <PencilIcon className="w-4 h-4" />
-        </Button>
-      </div>
-    );
+      // users 테이블에서 현재 사용자 확인
+      const { data: existingUser } = await supabase.from("users").select().eq("clerk_id", userId).single();
+
+      if (existingUser) {
+        // 기존 사용자 정보 업데이트
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({ nickname, updated_at: new Date().toISOString() })
+          .eq("clerk_id", userId);
+
+        if (updateError) throw updateError;
+      } else {
+        // 새 사용자 정보 생성
+        const { error: insertError } = await supabase.from("users").insert({ clerk_id: userId, nickname });
+
+        if (insertError) throw insertError;
+      }
+
+      toast.success("닉네임이 성공적으로 변경되었습니다.");
+    } catch (error) {
+      console.error("닉네임 변경 중 오류 발생:", error);
+      toast.error("닉네임 변경에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Input value={nickname} onChange={(e) => setNickname(e.target.value)} disabled={loading} className="w-40" />
-      <Button size="icon" variant="ghost" onClick={handleSave} disabled={loading}>
-        <CheckIcon className="w-4 h-4" />
-      </Button>
-      <Button
-        size="icon"
-        variant="ghost"
-        onClick={() => {
-          setEditing(false);
-          setNickname(currentNickname);
-        }}
-        disabled={loading}
-      >
-        <XIcon className="w-4 h-4" />
-      </Button>
-      {error && <span className="text-destructive text-xs ml-2">{error}</span>}
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold mb-4">닉네임 변경</h2>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <Input
+          type="text"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          placeholder="새로운 닉네임"
+          className="flex-1"
+        />
+        <Button type="submit" disabled={isLoading || !nickname.trim() || nickname === currentNickname}>
+          {isLoading ? "변경 중..." : "변경"}
+        </Button>
+      </form>
     </div>
   );
 }
