@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignOutButton } from "@clerk/nextjs";
 import { UserInfoCard } from "./UserInfoCard";
 import { EditNickname } from "./EditNickname";
 import { MyLikedPrompts } from "./MyLikedPrompts";
@@ -15,6 +15,11 @@ export default function MyPage() {
 
   return (
     <main className="max-w-2xl mx-auto py-10 px-4 space-y-8">
+      <div className="flex justify-end mb-4">
+        <SignOutButton>
+          <button className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition">로그아웃</button>
+        </SignOutButton>
+      </div>
       <UserInfoCard
         email={user.emailAddresses[0]?.emailAddress || ""}
         nickname={user.username || user.firstName || ""}

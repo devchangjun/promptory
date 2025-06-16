@@ -4,6 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { Trash2, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { useSession } from "@clerk/nextjs";
 
 interface Prompt {
   id: string;
@@ -24,34 +26,35 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const { session } = useSession();
 
-  function createSupabaseClient() {
-    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-  }
-
-  async function reloadPrompts() {
-    setLoading(true);
-    setError(null);
-    const client = createSupabaseClient();
-    const { data, error } = await client.from("prompts").select("id, title, content, user_id, created_at");
-    if (!error) setPrompts(data as Prompt[]);
-    else setError(error.message);
-    setLoading(false);
+  async function createSupabaseClient() {
+    const token = await session?.getToken({ template: "supabase" });
+    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      global: {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      },
+    });
   }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!newTitle.trim() || !newContent.trim()) return;
-    const client = createSupabaseClient();
-    const { error } = await client.from("prompts").insert({ title: newTitle, content: newContent });
-    if (!error) {
+    const client = await createSupabaseClient();
+    const { data, error } = await client
+      .from("prompts")
+      .insert({ title: newTitle, content: newContent })
+      .select()
+      .single();
+    if (!error && data) {
+      setPrompts((prev) => [data as Prompt, ...prev]);
       setNewTitle("");
       setNewContent("");
-      reloadPrompts();
     } else {
-      alert("등록 실패: " + error.message);
+      alert("등록 실패: " + (error?.message || ""));
     }
   }
 
@@ -59,31 +62,45 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
     setEditingId(prompt.id);
     setEditTitle(prompt.title);
     setEditContent(prompt.content);
+    setEditOpen(true);
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditTitle("");
     setEditContent("");
+    setEditOpen(false);
   }
 
   async function handleEditSave(id: string) {
-    const client = createSupabaseClient();
-    const { error } = await client.from("prompts").update({ title: editTitle, content: editContent }).eq("id", id);
-    if (!error) {
+    const client = await createSupabaseClient();
+
+    const { data, error } = await client
+      .from("prompts")
+      .update({ title: editTitle, content: editContent })
+      .eq("id", id)
+      .select()
+      .maybeSingle();
+
+    if (!error && data) {
+      setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, title: data.title, content: data.content } : p)));
       setEditingId(null);
-      reloadPrompts();
+      setEditOpen(false);
+    } else if (!error && !data) {
+      alert("수정할 프롬프트를 찾을 수 없습니다.");
     } else {
-      alert("수정 실패: " + error.message);
+      alert("수정 실패: " + (error?.message || ""));
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("정말로 삭제하시겠습니까?")) return;
-    const client = createSupabaseClient();
+    const client = await createSupabaseClient();
     const { error } = await client.from("prompts").delete().eq("id", id);
-    if (!error) setPrompts((prompts) => prompts.filter((p) => p.id !== id));
-    else alert("삭제 실패: " + error.message);
+    if (!error) {
+      setPrompts((prev) => prev.filter((p) => p.id !== id));
+    } else {
+      alert("삭제 실패: " + error.message);
+    }
   }
 
   return (
@@ -101,10 +118,8 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
           등록
         </Button>
       </form>
-      {loading && <p>로딩 중...</p>}
-      {error && <p className="text-destructive">에러: {error}</p>}
-      {!loading && prompts.length === 0 && <p>등록된 프롬프트가 없습니다.</p>}
-      {!loading && prompts.length > 0 && (
+      {prompts.length === 0 && <p>등록된 프롬프트가 없습니다.</p>}
+      {prompts.length > 0 && (
         <table className="w-full border text-sm">
           <thead>
             <tr className="bg-muted text-foreground">
@@ -120,39 +135,22 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
             {prompts.map((prompt) => (
               <tr key={prompt.id} className="border-b">
                 <td className="p-2 font-mono text-xs">{prompt.id}</td>
-                <td className="p-2 max-w-[180px] truncate">
-                  {editingId === prompt.id ? (
-                    <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-40" />
-                  ) : (
-                    prompt.title
-                  )}
-                </td>
-                <td className="p-2 max-w-[240px] truncate">
-                  {editingId === prompt.id ? (
-                    <Input value={editContent} onChange={(e) => setEditContent(e.target.value)} />
-                  ) : (
-                    prompt.content
-                  )}
-                </td>
+                <td className="p-2 max-w-[180px] truncate">{prompt.title}</td>
+                <td className="p-2 max-w-[240px] truncate">{prompt.content}</td>
                 <td className="p-2 font-mono text-xs">{prompt.user_id}</td>
                 <td className="p-2">{prompt.created_at?.slice(0, 10)}</td>
                 <td className="p-2 flex gap-1">
-                  {editingId === prompt.id ? (
-                    <>
-                      <Button size="sm" variant="default" onClick={() => handleEditSave(prompt.id)}>
-                        <Check className="size-4 mr-1" /> 저장
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={cancelEdit}>
-                        <X className="size-4 mr-1" /> 취소
-                      </Button>
-                    </>
-                  ) : (
-                    <Button size="sm" variant="outline" onClick={() => startEdit(prompt)}>
-                      <Pencil className="size-4 mr-1" /> 수정
-                    </Button>
-                  )}
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(prompt.id)}>
-                    <Trash2 className="size-4 mr-1" /> 삭제
+                  <Button size="sm" variant="outline" onClick={() => startEdit(prompt)}>
+                    <Pencil className="size-4 mr-1" /> 수정
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="bg-red-600 hover:bg-red-700 text-white border border-red-700 shadow-md px-3 py-1 flex items-center gap-2"
+                    onClick={() => handleDelete(prompt.id)}
+                    disabled={!session}
+                  >
+                    <Trash2 className="size-4" /> 삭제
                   </Button>
                 </td>
               </tr>
@@ -160,6 +158,39 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
           </tbody>
         </table>
       )}
+      {/* 수정 모달 */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-xl w-full">
+          <DialogHeader>
+            <DialogTitle>프롬프트 수정</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="제목"
+              className="w-full"
+            />
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              placeholder="내용"
+              rows={8}
+              className="rounded-md border border-input bg-background p-3 text-base resize-y min-h-[120px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="default" onClick={() => editingId && handleEditSave(editingId)}>
+              <Check className="size-4 mr-1" /> 저장
+            </Button>
+            <DialogClose asChild>
+              <Button variant="outline" onClick={cancelEdit}>
+                <X className="size-4 mr-1" /> 취소
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
