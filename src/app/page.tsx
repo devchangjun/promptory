@@ -57,6 +57,7 @@ async function getCategories(): Promise<Category[]> {
 }
 
 export default async function Home() {
+  console.log("home start");
   const latestPrompts = await getPrompts();
   const categories = await getCategories();
   const likeCounts = await getLikeCounts(latestPrompts.map((p) => p.id));
