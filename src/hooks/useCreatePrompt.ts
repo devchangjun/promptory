@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import type { Session } from "@clerk/nextjs";
+import { createClient } from "@supabase/supabase-js";
 
 interface CreatePromptInput {
   title: string;
   content: string;
   category_id?: string | null;
-  session: any; // Clerk 세션
+  session: Session | null;
 }
 
 export function useCreatePrompt() {
@@ -21,11 +23,9 @@ export function useCreatePrompt() {
       const client = supabase;
       // 인증 토큰 필요시 클라이언트 재생성
       const sb = session
-        ? require("@supabase/supabase-js").createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            { accessToken: async () => session.getToken() ?? null }
-          )
+        ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+            global: { headers: { Authorization: `Bearer ${await session.getToken({ template: "supabase" })}` } },
+          })
         : client;
       const { error } = await sb.from("prompts").insert({
         title,
@@ -35,8 +35,8 @@ export function useCreatePrompt() {
       if (error) throw error;
       setSuccess(true);
       return true;
-    } catch (e: any) {
-      setError(e.message || "등록 실패");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "등록 실패");
       return false;
     } finally {
       setIsLoading(false);

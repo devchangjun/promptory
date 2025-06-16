@@ -4,7 +4,6 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Header";
-import SWRProvider from "@/components/SWRProvider";
 
 export const metadata: Metadata = {
   title: "Promptory - 최고의 프롬프트 공유 플랫폼",
@@ -88,11 +87,9 @@ export default function RootLayout({
         style={{ fontFamily: "Pretendard, var(--font-geist-sans), sans-serif" }}
       >
         <ClerkProvider>
-          <SWRProvider>
-            <Header />
-            {children}
-            <Toaster />
-          </SWRProvider>
+          <Header />
+          {children}
+          <Toaster />
         </ClerkProvider>
       </body>
     </html>

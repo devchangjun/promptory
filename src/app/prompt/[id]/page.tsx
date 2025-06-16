@@ -32,9 +32,10 @@ async function getCategoryName(category_id?: string | null): Promise<string | nu
   return data?.name || null;
 }
 
-export default async function PromptDetailPage({ params }: { params: { id: string } }) {
+export default async function PromptDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { userId } = await auth();
-  const prompt = await getPrompt(params.id);
+  const prompt = await getPrompt(id);
   if (!prompt) return notFound();
   const categoryName = await getCategoryName(prompt.category_id);
 

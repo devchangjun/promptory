@@ -35,7 +35,7 @@ export default function TasksPage() {
       setLoading(false);
     }
     loadTasks();
-  }, [user]);
+  }, [user, client]);
 
   async function createTask(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

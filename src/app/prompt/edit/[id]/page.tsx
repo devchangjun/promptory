@@ -24,6 +24,7 @@ export default function EditPromptPage({ params }: { params: { id: string } }) {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   async function createSupabaseClient() {
     const token = await session?.getToken({ template: "supabase" });
     return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
@@ -54,7 +55,7 @@ export default function EditPromptPage({ params }: { params: { id: string } }) {
     if (session) {
       fetchPrompt();
     }
-  }, [params.id, session, router]);
+  }, [params.id, session, router, createSupabaseClient]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
