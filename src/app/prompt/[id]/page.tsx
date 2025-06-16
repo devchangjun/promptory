@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { FileText } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import { auth } from "@clerk/nextjs/server";
 import PromptContentWithCopy from "./PromptContentWithCopy";
 import PromptLikeButton from "./PromptLikeButton";
+import EditPromptButton from "./EditPromptButton";
 
 interface Prompt {
   id: string;
@@ -31,9 +33,16 @@ async function getCategoryName(category_id?: string | null): Promise<string | nu
 }
 
 export default async function PromptDetailPage({ params }: { params: { id: string } }) {
+  const { userId } = await auth();
   const prompt = await getPrompt(params.id);
   if (!prompt) return notFound();
   const categoryName = await getCategoryName(prompt.category_id);
+
+  const isAuthor = userId === prompt.user_id;
+
+  console.log("Current user:", userId);
+  console.log("Prompt user:", prompt.user_id);
+  console.log("Is author:", isAuthor);
 
   return (
     <div className="max-w-2xl mx-auto py-10">
@@ -44,9 +53,10 @@ export default async function PromptDetailPage({ params }: { params: { id: strin
             {categoryName}
           </span>
         )}
-        <span className="ml-2">
+        <div className="ml-auto flex items-center gap-2">
           <PromptLikeButton promptId={prompt.id} />
-        </span>
+          {isAuthor && <EditPromptButton promptId={prompt.id} />}
+        </div>
       </h1>
       <PromptContentWithCopy content={prompt.content} />
       <div className="flex gap-4 text-xs text-gray-400 mt-6">

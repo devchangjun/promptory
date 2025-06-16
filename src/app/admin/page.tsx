@@ -1,29 +1,8 @@
 "use client";
 import { useUser } from "@clerk/nextjs";
-import { AlertTriangle, FileText, Users, Layers, MessageSquare, Package, Eye } from "lucide-react";
+import { AlertTriangle, FileText, Users, Layers } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-
-interface StatCardProps {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-}
-
-function StatCard({ title, value, icon }: StatCardProps) {
-  return (
-    <Card>
-      <CardContent className="flex items-center p-6">
-        <div className="flex items-center justify-center size-12 rounded-full bg-primary/10 mr-4">{icon}</div>
-        <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <h3 className="text-2xl font-bold">{value}</h3>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 interface FeatureCardProps {
   title: string;
