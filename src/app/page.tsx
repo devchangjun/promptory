@@ -2,11 +2,14 @@ import { FileText } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import PromptCard from "@/app/prompt/PromptCard";
 
 interface Prompt {
   id: string;
   title: string;
   content: string;
+  user_id: string;
+  category_id?: string | null;
   created_at?: string;
 }
 
@@ -15,9 +18,34 @@ async function getPrompts(): Promise<Prompt[]> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { data } = await supabase
     .from("prompts")
-    .select("id, title, content, created_at")
+    .select("id, title, content, created_at, user_id, category_id, like_count")
     .order("created_at", { ascending: false })
     .limit(3);
+  return data || [];
+}
+
+async function getLikeCounts(promptIds: string[]): Promise<Record<string, number>> {
+  if (promptIds.length === 0) return {};
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const { data } = await supabase.from("likes").select("prompt_id");
+  console.log("data", data);
+  const counts: Record<string, number> = {};
+  data?.forEach((row: { prompt_id: string }) => {
+    if (promptIds.includes(row.prompt_id)) {
+      counts[row.prompt_id] = (counts[row.prompt_id] || 0) + 1;
+    }
+  });
+  return counts;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+async function getCategories(): Promise<Category[]> {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const { data } = await supabase.from("categories").select("id, name");
   return data || [];
 }
 
@@ -47,6 +75,9 @@ const blogPosts = [
 
 export default async function Home() {
   const latestPrompts = await getPrompts();
+  const categories = await getCategories();
+  const likeCounts = await getLikeCounts(latestPrompts.map((p) => p.id));
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-between p-8 sm:p-20 font-[family-name:var(--font-geist-sans)] bg-background">
@@ -72,11 +103,12 @@ export default async function Home() {
           <div className="flex flex-col gap-4">
             {latestPrompts.length === 0 && <p className="text-muted-foreground">프롬프트가 없습니다.</p>}
             {latestPrompts.map((p) => (
-              <div key={p.id} className="p-4 border rounded-lg shadow-sm bg-card">
-                <div className="font-semibold text-base mb-1 truncate">{p.title}</div>
-                <div className="text-sm text-muted-foreground line-clamp-2 mb-1">{p.content}</div>
-                <div className="text-xs text-right text-gray-400">{p.created_at?.slice(0, 10)}</div>
-              </div>
+              <PromptCard
+                key={p.id}
+                prompt={p}
+                categoryName={p.category_id ? categoryMap[p.category_id] : undefined}
+                likeCount={likeCounts[p.id] || 0}
+              />
             ))}
           </div>
           {latestPrompts.length > 0 && (
