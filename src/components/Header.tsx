@@ -20,12 +20,6 @@ export default function Header() {
         >
           <FileText className="size-5" /> 프롬프트
         </Link>
-        <Link
-          href="/blog"
-          className="flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <BookOpen className="size-5" /> 블로그
-        </Link>
       </nav>
       <div className="flex items-center gap-2">
         {isSignedIn && user ? (

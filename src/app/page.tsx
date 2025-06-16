@@ -121,28 +121,6 @@ export default async function Home() {
             </div>
           )}
         </section>
-
-        {/* 블로그 글 */}
-        <section className="w-full">
-          <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-            <span className="size-5">📝</span> 블로그
-          </h2>
-          <div className="flex flex-col gap-4">
-            {blogPosts.map((post) => (
-              <a
-                key={post.id}
-                href={post.url}
-                className="block p-4 border rounded-lg bg-card hover:bg-accent transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <div className="font-semibold text-base mb-1 truncate">{post.title}</div>
-                <div className="text-sm text-muted-foreground line-clamp-2 mb-1">{post.summary}</div>
-                <div className="text-xs text-right text-gray-400">{post.date}</div>
-              </a>
-            ))}
-          </div>
-        </section>
       </main>
     </div>
   );
