@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useSession } from "@clerk/nextjs";
+import { useCreatePrompt } from "@/hooks/useCreatePrompt";
 
 interface Category {
   id: string;
@@ -20,10 +20,10 @@ export default function PromptForm({ categories }: Props) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { session } = useSession();
   const isLoggedIn = !!session;
+  const { createPrompt, isLoading, error } = useCreatePrompt();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,21 +35,17 @@ export default function PromptForm({ categories }: Props) {
       toast.error("로그인 후 등록할 수 있습니다.");
       return;
     }
-    setLoading(true);
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      accessToken: async () => session?.getToken() ?? null,
-    });
-    const { error } = await supabase.from("prompts").insert({
+    const ok = await createPrompt({
       title,
       content,
       category_id: categoryId || null,
+      session,
     });
-    setLoading(false);
-    if (!error) {
+    if (ok) {
       toast.success("프롬프트가 등록되었습니다.");
       router.push("/prompt");
-    } else {
-      toast.error("등록 실패: " + error.message);
+    } else if (error) {
+      toast.error("등록 실패: " + error);
     }
   }
 
@@ -76,8 +72,8 @@ export default function PromptForm({ categories }: Props) {
           </option>
         ))}
       </select>
-      <Button type="submit" disabled={loading || !isLoggedIn}>
-        {isLoggedIn ? (loading ? "등록 중..." : "프롬프트 등록") : "로그인 후 등록"}
+      <Button type="submit" disabled={isLoading || !isLoggedIn}>
+        {isLoggedIn ? (isLoading ? "등록 중..." : "프롬프트 등록") : "로그인 후 등록"}
       </Button>
       {!isLoggedIn && <p className="text-sm text-destructive">로그인한 사용자만 프롬프트를 등록할 수 있습니다.</p>}
     </form>
