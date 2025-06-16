@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function PromptContentWithCopy({ content }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [, setCopied] = useState(false);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(content);

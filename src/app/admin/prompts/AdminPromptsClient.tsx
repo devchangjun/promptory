@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useSession } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 interface Prompt {
   id: string;
@@ -28,6 +29,8 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
   const [editContent, setEditContent] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const { session } = useSession();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   async function createSupabaseClient() {
     const token = await session?.getToken({ template: "supabase" });
@@ -74,7 +77,6 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
 
   async function handleEditSave(id: string) {
     const client = await createSupabaseClient();
-
     const { data, error } = await client
       .from("prompts")
       .update({ title: editTitle, content: editContent })
@@ -86,6 +88,7 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
       setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, title: data.title, content: data.content } : p)));
       setEditingId(null);
       setEditOpen(false);
+      toast.success("프롬프트가 성공적으로 수정되었습니다.");
     } else if (!error && !data) {
       alert("수정할 프롬프트를 찾을 수 없습니다.");
     } else {
@@ -98,9 +101,12 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
     const { error } = await client.from("prompts").delete().eq("id", id);
     if (!error) {
       setPrompts((prev) => prev.filter((p) => p.id !== id));
+      toast.success("프롬프트가 성공적으로 삭제되었습니다.");
     } else {
       alert("삭제 실패: " + error.message);
     }
+    setDeleteId(null);
+    setDeleteOpen(false);
   }
 
   return (
@@ -147,8 +153,10 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
                     variant="destructive"
                     size="sm"
                     className="bg-red-600 hover:bg-red-700 text-white border border-red-700 shadow-md px-3 py-1 flex items-center gap-2"
-                    onClick={() => handleDelete(prompt.id)}
-                    disabled={!session}
+                    onClick={() => {
+                      setDeleteId(prompt.id);
+                      setDeleteOpen(true);
+                    }}
                   >
                     <Trash2 className="size-4" /> 삭제
                   </Button>
@@ -188,6 +196,35 @@ export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClien
                 <X className="size-4 mr-1" /> 취소
               </Button>
             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* 삭제 확인 모달 */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="max-w-sm w-full border-none">
+          <DialogHeader>
+            <DialogTitle>정말 삭제하시겠습니까?</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">이 프롬프트를 삭제하면 복구할 수 없습니다.</div>
+          <DialogFooter>
+            <div className="flex flex-row gap-2 justify-end">
+              <Button
+                variant="destructive"
+                onClick={() => deleteId && handleDelete(deleteId)}
+                className="flex items-center gap-1 text-red-600 bg-red-600 hover:bg-red-700 text-white border border-red-700 shadow-md px-3 py-1 cursor-pointer"
+              >
+                <Trash2 className="size-4 mr-1" /> 삭제
+              </Button>
+              <DialogClose asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteOpen(false)}
+                  className="flex items-center gap-1 cursor-pointer"
+                >
+                  취소
+                </Button>
+              </DialogClose>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
