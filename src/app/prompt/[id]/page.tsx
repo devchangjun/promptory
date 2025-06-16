@@ -30,11 +30,7 @@ async function getCategoryName(category_id?: string | null): Promise<string | nu
   return data?.name || null;
 }
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default async function PromptDetailPage({ params }: PageProps) {
+export default async function PromptDetailPage({ params }: { params: { id: string } }) {
   const prompt = await getPrompt(params.id);
   if (!prompt) return notFound();
   const categoryName = await getCategoryName(prompt.category_id);
