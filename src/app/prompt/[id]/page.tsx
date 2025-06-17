@@ -6,15 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 import PromptContentWithCopy from "./PromptContentWithCopy";
 import PromptLikeButton from "./PromptLikeButton";
 import EditPromptButton from "./EditPromptButton";
-
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  user_id: string;
-  category_id?: string | null;
-  created_at?: string;
-}
+import { Prompt, promptSchema } from "@/schemas/promptSchema";
 
 async function getPrompt(id: string): Promise<Prompt | null> {
   const supabase = createServerComponentClient({ cookies });
@@ -23,7 +15,15 @@ async function getPrompt(id: string): Promise<Prompt | null> {
     .select("id, title, content, user_id, created_at, category_id")
     .eq("id", id)
     .single();
-  return data || null;
+
+  if (!data) return null;
+
+  try {
+    return promptSchema.parse(data);
+  } catch (error) {
+    console.error("Invalid prompt data:", error);
+    return null;
+  }
 }
 
 async function getCategoryName(category_id?: string | null): Promise<string | null> {
