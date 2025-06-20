@@ -73,12 +73,15 @@ async function getLikeCounts(promptIds: string[]): Promise<Record<string, number
 export default async function PromptPage({
   searchParams,
 }: {
-  searchParams: { category?: string; q?: string; page?: string };
+  searchParams: Promise<{ category?: string; q?: string; page?: string }>;
 }) {
-  const { category, q } = searchParams;
-  const page = Number(searchParams.page) || 1;
+  const { category, q, page } = await searchParams;
+  const pageNumber = Number(page) || 1;
 
-  const [{ prompts, total }, categories] = await Promise.all([getPrompts({ category, q, page }), getCategories()]);
+  const [{ prompts, total }, categories] = await Promise.all([
+    getPrompts({ category, q, page: pageNumber }),
+    getCategories(),
+  ]);
 
   const likeCounts = await getLikeCounts(prompts.map((p) => p.id));
 
@@ -113,17 +116,17 @@ export default async function PromptPage({
       </div>
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 gap-2">
-          <Link href={getPageUrl({ page: Math.max(1, page - 1), category, q })}>
-            <Button variant="outline" size="sm" disabled={page === 1}>
+          <Link href={getPageUrl({ page: Math.max(1, pageNumber - 1), category, q })}>
+            <Button variant="outline" size="sm" disabled={pageNumber === 1}>
               이전
             </Button>
           </Link>
           {Array.from({ length: totalPages }).map((_, i) => (
             <Link key={i + 1} href={getPageUrl({ page: i + 1, category, q })}>
               <Button
-                variant={page === i + 1 ? "default" : "outline"}
+                variant={pageNumber === i + 1 ? "default" : "outline"}
                 size="sm"
-                className={page === i + 1 ? "font-bold" : ""}
+                className={pageNumber === i + 1 ? "font-bold" : ""}
               >
                 {i + 1}
               </Button>
@@ -131,12 +134,12 @@ export default async function PromptPage({
           ))}
           <Link
             href={getPageUrl({
-              page: Math.min(totalPages, page + 1),
+              page: Math.min(totalPages, pageNumber + 1),
               category,
               q,
             })}
           >
-            <Button variant="outline" size="sm" disabled={page === totalPages}>
+            <Button variant="outline" size="sm" disabled={pageNumber === totalPages}>
               다음
             </Button>
           </Link>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router, protectedProcedure } from "../trpc";
-import { Prompt } from "@/types/prompt";
+import { Prompt, promptSchema } from "@/schemas/promptSchema";
 
 export const promptRouter = router({
   getMyPrompts: publicProcedure.input(z.object({ userId: z.string() })).query(async ({ input, ctx }) => {
@@ -44,6 +44,30 @@ export const promptRouter = router({
       if (promptsError) throw promptsError;
 
       return promptsData as Prompt[];
+    }),
+
+  getPromptById: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const { id } = input;
+      const { data, error } = await ctx.supabase.from("prompts").select("*, categories(name)").eq("id", id).single();
+
+      if (error) {
+        console.error(error);
+        return null;
+      }
+      if (!data) return null;
+
+      try {
+        return promptSchema.parse(data);
+      } catch (e) {
+        console.error("Invalid prompt data from DB:", e);
+        return null;
+      }
     }),
 
   createPrompt: protectedProcedure
