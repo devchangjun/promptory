@@ -10,11 +10,7 @@ import { Prompt, promptSchema } from "@/schemas/promptSchema";
 
 async function getPrompt(id: string): Promise<Prompt | null> {
   const supabase = createServerComponentClient({ cookies });
-  const { data } = await supabase
-    .from("prompts")
-    .select("id, title, content, user_id, created_at, category_id")
-    .eq("id", id)
-    .single();
+  const { data } = await supabase.from("prompts").select("*, categories(name)").eq("id", id).single();
 
   if (!data) return null;
 
@@ -26,25 +22,14 @@ async function getPrompt(id: string): Promise<Prompt | null> {
   }
 }
 
-async function getCategoryName(category_id?: string | null): Promise<string | null> {
-  if (!category_id) return null;
-  const supabase = createServerComponentClient({ cookies });
-  const { data } = await supabase.from("categories").select("name").eq("id", category_id).single();
-  return data?.name || null;
-}
+export default async function PromptDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
+  const [{ userId }, prompt] = await Promise.all([auth(), getPrompt(id)]);
 
-export default async function PromptDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const { userId } = await auth();
-  const prompt = await getPrompt(id);
   if (!prompt) return notFound();
-  const categoryName = await getCategoryName(prompt.category_id);
 
+  const categoryName = prompt.categories?.name;
   const isAuthor = userId === prompt.user_id;
-
-  console.log("Current user:", userId);
-  console.log("Prompt user:", prompt.user_id);
-  console.log("Is author:", isAuthor);
 
   return (
     <div className="max-w-2xl mx-auto py-10">

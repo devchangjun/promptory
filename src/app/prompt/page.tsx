@@ -64,13 +64,16 @@ function getPageUrl({ page, category, q }: { page: number; category?: string; q?
 async function getLikeCounts(promptIds: string[]): Promise<Record<string, number>> {
   if (promptIds.length === 0) return {};
   const supabase = createServerComponentClient({ cookies });
-  const { data } = await supabase.from("likes").select("prompt_id");
-  console.log("data", data);
+  const { data, error } = await supabase.from("likes").select("prompt_id").in("prompt_id", promptIds);
+
+  if (error) {
+    console.error("Error fetching like counts:", error);
+    return {};
+  }
+
   const counts: Record<string, number> = {};
   data?.forEach((row: { prompt_id: string }) => {
-    if (promptIds.includes(row.prompt_id)) {
-      counts[row.prompt_id] = (counts[row.prompt_id] || 0) + 1;
-    }
+    counts[row.prompt_id] = (counts[row.prompt_id] || 0) + 1;
   });
   return counts;
 }
@@ -78,15 +81,17 @@ async function getLikeCounts(promptIds: string[]): Promise<Record<string, number
 export default async function PromptPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; q?: string; page?: string }>;
+  searchParams: { category?: string; q?: string; page?: string };
 }) {
-  const params = await searchParams;
-  const categories = await getCategories();
-  const page = Number(params.page) || 1;
-  const { prompts, total } = await getPrompts({ category: params.category, q: params.q, page });
+  const { category, q } = searchParams;
+  const page = Number(searchParams.page) || 1;
+
+  const [{ prompts, total }, categories] = await Promise.all([getPrompts({ category, q, page }), getCategories()]);
+
+  const likeCounts = await getLikeCounts(prompts.map((p) => p.id));
+
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const likeCounts = await getLikeCounts(prompts.map((p) => p.id));
 
   return (
     <div className="max-w-3xl mx-auto py-10">
@@ -101,7 +106,7 @@ export default async function PromptPage({
         </Link>
       </div>
       <Suspense fallback={<div className="mb-6">필터 로딩중...</div>}>
-        <FilterBar categories={categories} defaultCategory={params.category} defaultQ={params.q} />
+        <FilterBar categories={categories} defaultCategory={category} defaultQ={q} />
       </Suspense>
       <div className="flex flex-col gap-4 mt-6">
         {prompts.length === 0 && <p className="text-muted-foreground">프롬프트가 없습니다.</p>}
@@ -116,13 +121,13 @@ export default async function PromptPage({
       </div>
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 gap-2">
-          <Link href={getPageUrl({ page: Math.max(1, page - 1), category: params.category, q: params.q })}>
+          <Link href={getPageUrl({ page: Math.max(1, page - 1), category, q })}>
             <Button variant="outline" size="sm" disabled={page === 1}>
               이전
             </Button>
           </Link>
           {Array.from({ length: totalPages }).map((_, i) => (
-            <Link key={i + 1} href={getPageUrl({ page: i + 1, category: params.category, q: params.q })}>
+            <Link key={i + 1} href={getPageUrl({ page: i + 1, category, q })}>
               <Button
                 variant={page === i + 1 ? "default" : "outline"}
                 size="sm"
@@ -135,8 +140,8 @@ export default async function PromptPage({
           <Link
             href={getPageUrl({
               page: Math.min(totalPages, page + 1),
-              category: params.category,
-              q: params.q,
+              category,
+              q,
             })}
           >
             <Button variant="outline" size="sm" disabled={page === totalPages}>
