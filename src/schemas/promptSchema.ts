@@ -8,12 +8,8 @@ export const promptSchema = z.object({
   user_id: z.string(),
   created_at: z.string().optional().nullable(),
   category_id: z.string().optional().nullable(),
-  categories: z
-    .object({
-      name: z.string(),
-    })
-    .optional()
-    .nullable(),
+  category: z.string().optional().nullable(),
+  likeCount: z.number().optional().nullable(),
 });
 
 export type Prompt = z.infer<typeof promptSchema>;

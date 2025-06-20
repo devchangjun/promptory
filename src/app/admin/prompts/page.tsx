@@ -1,8 +1,8 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
+import { Prompt } from "@/schemas/promptSchema";
 import AdminPromptsClient from "./AdminPromptsClient";
-import { Prompt } from "@/types/prompt";
 
 export default async function AdminPromptsPage() {
   const user = await currentUser();
@@ -37,5 +37,5 @@ export default async function AdminPromptsPage() {
 
   const prompts = (data as Prompt[]) || [];
 
-  return <AdminPromptsClient initialPrompts={prompts} />;
+  return <AdminPromptsClient prompts={prompts} />;
 }

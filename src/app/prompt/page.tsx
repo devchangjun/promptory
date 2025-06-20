@@ -1,13 +1,12 @@
-import { FileText } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import FilterBar from "./FilterBar";
 import { Suspense } from "react";
 import PromptCard from "./PromptCard";
-import { Prompt } from "@/types/prompt";
+import { Prompt } from "@/schemas/promptSchema";
 
 interface Category {
   id: string;
@@ -20,7 +19,7 @@ async function getCategories(): Promise<Category[]> {
   return data || [];
 }
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 
 async function getPrompts({
   category,
@@ -32,17 +31,33 @@ async function getPrompts({
   page?: number;
 }): Promise<{ prompts: Prompt[]; total: number }> {
   const supabase = createServerComponentClient({ cookies });
+
+  // RPC를 사용하여 프롬프트 목록과 좋아요 수를 함께 가져옵니다.
   let query = supabase
     .from("prompts")
-    .select("id, title, content, user_id, created_at, category_id", { count: "exact" })
+    .select("*, categories(name)", { count: "exact" })
     .order("created_at", { ascending: false });
+
   if (category) query = query.eq("category_id", category);
   if (q) query = query.ilike("title", `%${q}%`);
+
   const from = ((page || 1) - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
   query = query.range(from, to);
-  const { data, count } = await query;
-  return { prompts: data || [], total: count || 0 };
+
+  const { data, count, error } = await query;
+
+  if (error) {
+    console.error("Error fetching prompts:", error);
+    return { prompts: [], total: 0 };
+  }
+
+  const prompts = data.map((p) => ({
+    ...p,
+    category: p.categories?.name,
+  }));
+
+  return { prompts: prompts || [], total: count || 0 };
 }
 
 function getPageUrl({ page, category, q }: { page: number; category?: string; q?: string }) {
@@ -51,23 +66,6 @@ function getPageUrl({ page, category, q }: { page: number; category?: string; q?
   if (q) params.set("q", q);
   if (page > 1) params.set("page", String(page));
   return `/prompt${params.toString() ? `?${params}` : ""}`;
-}
-
-async function getLikeCounts(promptIds: string[]): Promise<Record<string, number>> {
-  if (promptIds.length === 0) return {};
-  const supabase = createServerComponentClient({ cookies });
-  const { data, error } = await supabase.from("likes").select("prompt_id").in("prompt_id", promptIds);
-
-  if (error) {
-    console.error("Error fetching like counts:", error);
-    return {};
-  }
-
-  const counts: Record<string, number> = {};
-  data?.forEach((row: { prompt_id: string }) => {
-    counts[row.prompt_id] = (counts[row.prompt_id] || 0) + 1;
-  });
-  return counts;
 }
 
 export default async function PromptPage({
@@ -83,36 +81,35 @@ export default async function PromptPage({
     getCategories(),
   ]);
 
-  const likeCounts = await getLikeCounts(prompts.map((p) => p.id));
-
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="max-w-3xl mx-auto py-10">
+    <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <FileText className="size-6" /> 프롬프트 전체 목록
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <FileText className="size-8" /> 프롬프트 허브
         </h1>
         <Link href="/prompt/new">
           <Button variant="default" className="gap-2">
-            <Plus className="size-4" /> 프롬프트 추가하기
+            <Plus className="size-4" /> 새 프롬프트
           </Button>
         </Link>
       </div>
       <Suspense fallback={<div className="mb-6">필터 로딩중...</div>}>
         <FilterBar categories={categories} defaultCategory={category} defaultQ={q} />
       </Suspense>
-      <div className="flex flex-col gap-4 mt-6">
-        {prompts.length === 0 && <p className="text-muted-foreground">프롬프트가 없습니다.</p>}
-        {prompts.map((p) => (
-          <PromptCard
-            key={p.id}
-            prompt={p}
-            categoryName={p.category_id ? categoryMap[p.category_id] : undefined}
-            likeCount={likeCounts[p.id] || 0}
-          />
-        ))}
+      <div className="mt-8">
+        {prompts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {prompts.map((prompt) => (
+              <PromptCard key={prompt.id} prompt={prompt} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 text-muted-foreground">
+            <p>조건에 맞는 프롬프트가 없습니다.</p>
+          </div>
+        )}
       </div>
       {totalPages > 1 && (
         <div className="flex justify-center mt-8 gap-2">
@@ -132,13 +129,7 @@ export default async function PromptPage({
               </Button>
             </Link>
           ))}
-          <Link
-            href={getPageUrl({
-              page: Math.min(totalPages, pageNumber + 1),
-              category,
-              q,
-            })}
-          >
+          <Link href={getPageUrl({ page: Math.min(totalPages, pageNumber + 1), category, q })}>
             <Button variant="outline" size="sm" disabled={pageNumber === totalPages}>
               다음
             </Button>

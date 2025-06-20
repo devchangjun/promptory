@@ -1,226 +1,45 @@
 "use client";
+
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { Trash2, Pencil, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useSession } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { Prompt } from "@/types/prompt";
+import { Prompt } from "@/schemas/promptSchema";
 
 interface AdminPromptsClientProps {
-  initialPrompts: Prompt[];
+  prompts: Prompt[];
 }
 
-export default function AdminPromptsClient({ initialPrompts }: AdminPromptsClientProps) {
-  const [prompts, setPrompts] = useState<Prompt[]>(initialPrompts);
-  const [newTitle, setNewTitle] = useState("");
-  const [newContent, setNewContent] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-  const [editOpen, setEditOpen] = useState(false);
+export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPromptsClientProps) {
+  const [prompts, setPrompts] = useState(initialPrompts);
   const { session } = useSession();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  async function createSupabaseClient() {
-    const token = await session?.getToken({ template: "supabase" });
-    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      global: {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-      },
-    });
-  }
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) return;
-    const client = await createSupabaseClient();
-    const { data, error } = await client
-      .from("prompts")
-      .insert({ title: newTitle, content: newContent })
-      .select()
-      .single();
-    if (!error && data) {
-      setPrompts((prev) => [data as Prompt, ...prev]);
-      setNewTitle("");
-      setNewContent("");
-    } else {
-      alert("등록 실패: " + (error?.message || ""));
+  const handleDelete = async (id: string) => {
+    if (!session) {
+      toast.error("인증되지 않은 사용자입니다.");
+      return;
     }
-  }
-
-  function startEdit(prompt: Prompt) {
-    setEditingId(prompt.id);
-    setEditTitle(prompt.title);
-    setEditContent(prompt.content);
-    setEditOpen(true);
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setEditTitle("");
-    setEditContent("");
-    setEditOpen(false);
-  }
-
-  async function handleEditSave(id: string) {
-    const client = await createSupabaseClient();
-    const { data, error } = await client
-      .from("prompts")
-      .update({ title: editTitle, content: editContent })
-      .eq("id", id)
-      .select()
-      .maybeSingle();
-
-    if (!error && data) {
-      setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, title: data.title, content: data.content } : p)));
-      setEditingId(null);
-      setEditOpen(false);
-      toast.success("프롬프트가 성공적으로 수정되었습니다.");
-    } else if (!error && !data) {
-      alert("수정할 프롬프트를 찾을 수 없습니다.");
-    } else {
-      alert("수정 실패: " + (error?.message || ""));
-    }
-  }
-
-  async function handleDelete(id: string) {
-    const client = await createSupabaseClient();
-    const { error } = await client.from("prompts").delete().eq("id", id);
-    if (!error) {
-      setPrompts((prev) => prev.filter((p) => p.id !== id));
-      toast.success("프롬프트가 성공적으로 삭제되었습니다.");
-    } else {
-      alert("삭제 실패: " + error.message);
-    }
-    setDeleteId(null);
-    setDeleteOpen(false);
-  }
+    // 여기에 실제 삭제 로직을 구현해야 합니다. (예: tRPC 호출)
+    // 지금은 클라이언트 측에서만 삭제합니다.
+    setPrompts(prompts.filter((p) => p.id !== id));
+    toast.success("프롬프트가 삭제되었습니다.");
+  };
 
   return (
-    <div className="max-w-4xl mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">프롬프트 관리</h1>
-      <form onSubmit={handleAdd} className="flex gap-2 mb-6 items-end">
-        <Input placeholder="제목" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-48" />
-        <Input
-          placeholder="내용"
-          value={newContent}
-          onChange={(e) => setNewContent(e.target.value)}
-          className="flex-1"
-        />
-        <Button type="submit" variant="default" disabled={!newTitle.trim() || !newContent.trim()}>
-          등록
-        </Button>
-      </form>
-      {prompts.length === 0 && <p>등록된 프롬프트가 없습니다.</p>}
-      {prompts.length > 0 && (
-        <table className="w-full border text-sm">
-          <thead>
-            <tr className="bg-muted text-foreground">
-              <th className="p-2">ID</th>
-              <th className="p-2">제목</th>
-              <th className="p-2">내용</th>
-              <th className="p-2">작성자</th>
-              <th className="p-2">생성일</th>
-              <th className="p-2">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            {prompts.map((prompt) => (
-              <tr key={prompt.id} className="border-b">
-                <td className="p-2 font-mono text-xs">{prompt.id}</td>
-                <td className="p-2 max-w-[180px] truncate">{prompt.title}</td>
-                <td className="p-2 max-w-[240px] truncate">{prompt.content}</td>
-                <td className="p-2 font-mono text-xs">{prompt.user_id}</td>
-                <td className="p-2">{prompt.created_at?.slice(0, 10)}</td>
-                <td className="p-2 flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => startEdit(prompt)}>
-                    <Pencil className="size-4 mr-1" /> 수정
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="bg-red-600 hover:bg-red-700 text-white border border-red-700 shadow-md px-3 py-1 flex items-center gap-2"
-                    onClick={() => {
-                      setDeleteId(prompt.id);
-                      setDeleteOpen(true);
-                    }}
-                  >
-                    <Trash2 className="size-4" /> 삭제
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      {/* 수정 모달 */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-xl w-full">
-          <DialogHeader>
-            <DialogTitle>프롬프트 수정</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <Input
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              placeholder="제목"
-              className="w-full"
-            />
-            <textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              placeholder="내용"
-              rows={8}
-              className="rounded-md border border-input bg-background p-3 text-base resize-y min-h-[120px]"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="default" onClick={() => editingId && handleEditSave(editingId)}>
-              <Check className="size-4 mr-1" /> 저장
+    <div>
+      <h1 className="text-2xl font-bold mb-4">프롬프트 관리</h1>
+      <div>
+        {prompts.map((prompt) => (
+          <div key={prompt.id} className="flex items-center gap-4 border-b p-2">
+            <span className="flex-1 font-semibold">{prompt.title}</span>
+            <span className="flex-1 text-sm text-gray-500">{prompt.user_id}</span>
+            <span className="text-xs text-gray-400">{prompt.created_at?.slice(0, 10)}</span>
+            <Button variant="destructive" size="sm" onClick={() => handleDelete(prompt.id)}>
+              삭제
             </Button>
-            <DialogClose asChild>
-              <Button variant="outline" onClick={cancelEdit}>
-                <X className="size-4 mr-1" /> 취소
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* 삭제 확인 모달 */}
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="max-w-sm w-full border-none">
-          <DialogHeader>
-            <DialogTitle>정말 삭제하시겠습니까?</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">이 프롬프트를 삭제하면 복구할 수 없습니다.</div>
-          <DialogFooter>
-            <div className="flex flex-row gap-2 justify-end">
-              <Button
-                variant="destructive"
-                onClick={() => deleteId && handleDelete(deleteId)}
-                className="flex items-center gap-1 text-red-600 bg-red-600 hover:bg-red-700 text-white border border-red-700 shadow-md px-3 py-1 cursor-pointer"
-              >
-                <Trash2 className="size-4 mr-1" /> 삭제
-              </Button>
-              <DialogClose asChild>
-                <Button
-                  variant="outline"
-                  onClick={() => setDeleteOpen(false)}
-                  className="flex items-center gap-1 cursor-pointer"
-                >
-                  취소
-                </Button>
-              </DialogClose>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -39,11 +39,17 @@ export const promptRouter = router({
       // 2. 해당 프롬프트 정보 조회
       const { data: promptsData, error: promptsError } = await ctx.supabase
         .from("prompts")
-        .select("*")
+        .select("*, categories(name)")
         .in("id", promptIds);
       if (promptsError) throw promptsError;
 
-      return promptsData as Prompt[];
+      const parsedData = z.array(promptSchema).parse(
+        promptsData.map((p) => ({
+          ...p,
+          category: p.categories?.name,
+        }))
+      );
+      return parsedData;
     }),
 
   getPromptById: publicProcedure

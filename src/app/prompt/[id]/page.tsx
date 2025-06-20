@@ -6,20 +6,24 @@ import PromptLikeButton from "./PromptLikeButton";
 import EditPromptButton from "./EditPromptButton";
 import { appRouter } from "@/server/routers/_app";
 import { createClient } from "@supabase/supabase-js";
+import { SupabaseClient } from "@supabase/supabase-js";
 
-export default async function PromptDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function PromptDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { userId, getToken } = await auth();
 
-  // Create a Supabase client with the user's token for RLS
-  const supabaseToken = await getToken({ template: "supabase" });
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${supabaseToken}`,
-      },
-    },
-  });
+  let supabase: SupabaseClient;
+
+  // 로그인 상태에 따라 Supabase 클라이언트 분기
+  if (userId) {
+    const supabaseToken = await getToken({ template: "supabase" });
+    supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      global: { headers: { Authorization: `Bearer ${supabaseToken}` } },
+    });
+  } else {
+    // 비로그인 사용자는 anon 키만 사용
+    supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  }
 
   // Create a caller for server-side tRPC
   const caller = appRouter.createCaller({
@@ -33,7 +37,7 @@ export default async function PromptDetailPage({ params }: { params: { id: strin
     return notFound();
   }
 
-  const categoryName = prompt.categories?.name;
+  const categoryName = prompt.category;
   const isAuthor = userId === prompt.user_id;
 
   return (

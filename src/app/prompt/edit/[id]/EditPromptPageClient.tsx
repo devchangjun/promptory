@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Prompt } from "@/types/prompt";
+import { Prompt } from "@/schemas/promptSchema";
+
 interface EditPromptPageClientProps {
   id: string;
+  prompt: Prompt;
 }
 
 export default function EditPromptPageClient({ id }: EditPromptPageClientProps) {

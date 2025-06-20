@@ -5,23 +5,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PromptCard from "@/app/prompt/PromptCard";
 import { TextScramble } from "@/components/ui/TextScramble";
-import { Prompt } from "@/types/prompt";
+import { Prompt } from "@/schemas/promptSchema";
 
 // 최신 프롬프트 3개
 async function getPrompts(): Promise<Prompt[]> {
-  console.log("start");
   const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase
     .from("prompts")
     .select("id, title, content, created_at, user_id, category_id, like_count")
     .order("created_at", { ascending: false })
     .limit(3);
-
-  console.log("process.env.NEXT_PUBLIC_SUPABASE_URL!", process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log("process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  console.log("supabase", supabase);
-  console.log("메인 데이터 가지고오기");
-  console.log("data", data);
   return data || [];
 }
 
@@ -29,7 +22,6 @@ async function getLikeCounts(promptIds: string[]): Promise<Record<string, number
   if (promptIds.length === 0) return {};
   const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase.from("likes").select("prompt_id");
-  console.log("data", data);
   const counts: Record<string, number> = {};
   data?.forEach((row: { prompt_id: string }) => {
     if (promptIds.includes(row.prompt_id)) {
@@ -51,10 +43,16 @@ async function getCategories(): Promise<Category[]> {
 }
 
 export default async function Home() {
-  const latestPrompts = await getPrompts();
+  const promptsData = await getPrompts();
   const categories = await getCategories();
-  const likeCounts = await getLikeCounts(latestPrompts.map((p) => p.id));
+  const likeCounts = await getLikeCounts(promptsData.map((p) => p.id));
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+
+  const latestPrompts = promptsData.map((p) => ({
+    ...p,
+    category: p.category_id ? categoryMap[p.category_id] : undefined,
+    likeCount: likeCounts[p.id] || 0,
+  }));
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-between font-[family-name:var(--font-geist-sans)] bg-background">
@@ -82,12 +80,7 @@ export default async function Home() {
           <div className="flex flex-col gap-4">
             {latestPrompts.length === 0 && <p className="text-muted-foreground">프롬프트가 없습니다.</p>}
             {latestPrompts.map((p) => (
-              <PromptCard
-                key={p.id}
-                prompt={p}
-                categoryName={p.category_id ? categoryMap[p.category_id] : undefined}
-                likeCount={likeCounts[p.id] || 0}
-              />
+              <PromptCard key={p.id} prompt={p} />
             ))}
           </div>
           {latestPrompts.length > 0 && (

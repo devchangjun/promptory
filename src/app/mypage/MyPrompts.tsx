@@ -15,7 +15,6 @@ export function MyPrompts({ userId }: MyPromptsProps) {
 
   return (
     <section>
-      <h2 className="font-bold text-lg mb-2">내가 작성한 프롬프트</h2>
       <div className="space-y-4">
         {prompts.map((prompt) => (
           <PromptCard key={prompt.id} prompt={prompt} />
