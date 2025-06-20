@@ -76,6 +76,7 @@ export default async function PromptPage({
   const { category, q, page } = await searchParams;
   const pageNumber = Number(page) || 1;
 
+  // 데이터 요청 병렬 처리
   const [{ prompts, total }, categories] = await Promise.all([
     getPrompts({ category, q, page: pageNumber }),
     getCategories(),

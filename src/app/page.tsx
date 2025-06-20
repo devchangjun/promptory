@@ -43,11 +43,18 @@ async function getCategories(): Promise<Category[]> {
 }
 
 export default async function Home() {
-  const promptsData = await getPrompts();
-  const categories = await getCategories();
-  const likeCounts = await getLikeCounts(promptsData.map((p) => p.id));
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+  // 1. 필요한 데이터를 가져오는 Promise 배열 생성
+  const promptsPromise = getPrompts();
+  const categoriesPromise = getCategories();
 
+  // 2. Promise.all로 데이터 요청 병렬 실행
+  const [promptsData, categories] = await Promise.all([promptsPromise, categoriesPromise]);
+
+  // 3. 프롬프트 데이터가 온 후에야 좋아요 수 요청
+  const likeCounts = await getLikeCounts(promptsData.map((p) => p.id));
+
+  // 4. 데이터 조합
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
   const latestPrompts = promptsData.map((p) => ({
     ...p,
     category: p.category_id ? categoryMap[p.category_id] : undefined,
