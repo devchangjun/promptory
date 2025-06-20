@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,14 @@ export default function PromptForm({ categories }: Props) {
   const router = useRouter();
   const { session } = useSession();
   const isLoggedIn = !!session;
-  const { createPrompt, isLoading, error } = useCreatePrompt();
+  const createPromptMutation = useCreatePrompt();
+
+  useEffect(() => {
+    if (createPromptMutation.isSuccess) {
+      toast.success("프롬프트가 등록되었습니다.");
+      router.push("/prompt");
+    }
+  }, [createPromptMutation.isSuccess, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,18 +42,11 @@ export default function PromptForm({ categories }: Props) {
       toast.error("로그인 후 등록할 수 있습니다.");
       return;
     }
-    const ok = await createPrompt({
+    await createPromptMutation.mutateAsync({
       title,
       content,
-      category_id: categoryId || null,
-      session,
+      category_id: categoryId || undefined,
     });
-    if (ok) {
-      toast.success("프롬프트가 등록되었습니다.");
-      router.push("/prompt");
-    } else if (error) {
-      toast.error("등록 실패: " + error);
-    }
   }
 
   return (
@@ -72,9 +72,12 @@ export default function PromptForm({ categories }: Props) {
           </option>
         ))}
       </select>
-      <Button type="submit" disabled={isLoading || !isLoggedIn}>
-        {isLoggedIn ? (isLoading ? "등록 중..." : "프롬프트 등록") : "로그인 후 등록"}
+      <Button type="submit" disabled={createPromptMutation.isPending || !isLoggedIn}>
+        {isLoggedIn ? (createPromptMutation.isPending ? "등록 중..." : "프롬프트 등록") : "로그인 후 등록"}
       </Button>
+      {createPromptMutation.isError && (
+        <p className="text-sm text-destructive">등록 실패: {createPromptMutation.error?.message}</p>
+      )}
       {!isLoggedIn && <p className="text-sm text-destructive">로그인한 사용자만 프롬프트를 등록할 수 있습니다.</p>}
     </form>
   );
