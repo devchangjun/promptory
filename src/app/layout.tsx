@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Header";
+import Provider from "@/lib/trpc/Provider";
 
 export const metadata: Metadata = {
   title: "Promptory - 최고의 프롬프트 공유 플랫폼",
@@ -86,11 +87,13 @@ export default function RootLayout({
         className={`min-h-screen bg-linear-45 from-indigo-200 via-purple-200 to-pink-200 ${geistSans.variable} ${geistMono.variable} antialiased font-[Pretendard, var(--font-geist-sans)]`}
         style={{ fontFamily: "Pretendard, var(--font-geist-sans), sans-serif" }}
       >
-        <ClerkProvider>
-          <Header />
-          {children}
-          <Toaster />
-        </ClerkProvider>
+        <Provider>
+          <ClerkProvider>
+            <Header />
+            {children}
+            <Toaster />
+          </ClerkProvider>
+        </Provider>
       </body>
     </html>
   );
