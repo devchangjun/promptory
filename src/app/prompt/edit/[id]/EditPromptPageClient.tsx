@@ -9,15 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  user_id: string;
-  category_id?: string | null;
-}
-
+import { Prompt } from "@/types/prompt";
 interface EditPromptPageClientProps {
   id: string;
 }

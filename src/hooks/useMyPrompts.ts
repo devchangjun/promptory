@@ -1,15 +1,6 @@
 import useSWR from "swr";
 import { supabase } from "@/lib/supabase";
-
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  user_id: string;
-  created_at: string;
-}
-
+import { Prompt } from "@/types/prompt";
 export function useMyPrompts(userId: string) {
   const { data, error, isLoading, mutate } = useSWR(userId ? ["my-prompts", userId] : null, async ([, userId]) => {
     const { data, error } = await supabase

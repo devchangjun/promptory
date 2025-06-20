@@ -7,15 +7,7 @@ import { Button } from "@/components/ui/button";
 import FilterBar from "./FilterBar";
 import { Suspense } from "react";
 import PromptCard from "./PromptCard";
-
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  user_id: string;
-  category_id?: string | null;
-  created_at?: string;
-}
+import { Prompt } from "@/types/prompt";
 
 interface Category {
   id: string;

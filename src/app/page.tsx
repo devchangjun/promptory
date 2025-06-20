@@ -5,15 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import PromptCard from "@/app/prompt/PromptCard";
 import { TextScramble } from "@/components/ui/TextScramble";
-
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  user_id: string;
-  category_id?: string | null;
-  created_at?: string;
-}
+import { Prompt } from "@/types/prompt";
 
 // 최신 프롬프트 3개
 async function getPrompts(): Promise<Prompt[]> {

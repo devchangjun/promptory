@@ -7,14 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useSession } from "@clerk/nextjs";
 import { toast } from "sonner";
-
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  user_id: string;
-  created_at?: string;
-}
+import { Prompt } from "@/types/prompt";
 
 interface AdminPromptsClientProps {
   initialPrompts: Prompt[];

@@ -16,15 +16,7 @@ import {
   TrendingUp,
   HelpCircle,
 } from "lucide-react";
-
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  user_id: string;
-  category_id?: string | null;
-  created_at?: string;
-}
+import { Prompt } from "@/types/prompt";
 
 interface Props {
   prompt: Prompt;
