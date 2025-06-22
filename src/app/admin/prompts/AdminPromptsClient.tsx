@@ -1,12 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useSession } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Prompt } from "@/schemas/promptSchema";
 import { useRouter } from "next/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { trpc } from "@/lib/trpc/client";
 
 interface AdminPromptsClientProps {
   prompts: Prompt[];
@@ -17,6 +29,16 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
   const { session } = useSession();
   const router = useRouter();
 
+  const deleteMutation = trpc.prompt.deletePrompt.useMutation({
+    onSuccess: (data) => {
+      setPrompts((prevPrompts) => prevPrompts.filter((p) => p.id !== data.id));
+      toast.success("프롬프트가 삭제되었습니다.");
+    },
+    onError: (error) => {
+      toast.error(`삭제 중 오류가 발생했습니다: ${error.message}`);
+    },
+  });
+
   const handleEdit = (id: string) => {
     router.push(`/prompt/edit/${id}`);
   };
@@ -26,10 +48,7 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
       toast.error("인증되지 않은 사용자입니다.");
       return;
     }
-    // 여기에 실제 삭제 로직을 구현해야 합니다. (예: tRPC 호출)
-    // 지금은 클라이언트 측에서만 삭제합니다.
-    setPrompts(prompts.filter((p) => p.id !== id));
-    toast.success("프롬프트가 삭제되었습니다.");
+    deleteMutation.mutate({ id });
   };
 
   return (
@@ -55,9 +74,30 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
                   <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEdit(prompt.id)}>
                     수정
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(prompt.id)}>
-                    삭제
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" className="bg-red-500">
+                        삭제
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          이 작업은 되돌릴 수 없습니다. 프롬프트가 영구적으로 삭제됩니다.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction
+                          className={buttonVariants({ variant: "destructive" })}
+                          onClick={() => handleDelete(prompt.id)}
+                        >
+                          삭제
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </TableCell>
               </TableRow>
             ))}
