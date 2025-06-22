@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Prompt } from "@/schemas/promptSchema";
+import { useRouter } from "next/navigation";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface AdminPromptsClientProps {
   prompts: Prompt[];
@@ -13,6 +15,11 @@ interface AdminPromptsClientProps {
 export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPromptsClientProps) {
   const [prompts, setPrompts] = useState(initialPrompts);
   const { session } = useSession();
+  const router = useRouter();
+
+  const handleEdit = (id: string) => {
+    router.push(`/prompt/edit/${id}`);
+  };
 
   const handleDelete = async (id: string) => {
     if (!session) {
@@ -26,19 +33,36 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">프롬프트 관리</h1>
-      <div>
-        {prompts.map((prompt) => (
-          <div key={prompt.id} className="flex items-center gap-4 border-b p-2">
-            <span className="flex-1 font-semibold">{prompt.title}</span>
-            <span className="flex-1 text-sm text-gray-500">{prompt.user_id}</span>
-            <span className="text-xs text-gray-400">{prompt.created_at?.slice(0, 10)}</span>
-            <Button variant="destructive" size="sm" onClick={() => handleDelete(prompt.id)}>
-              삭제
-            </Button>
-          </div>
-        ))}
+    <div className="container mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-6">프롬프트 관리</h1>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-2/5">제목</TableHead>
+              <TableHead className="w-1/5">작성자 ID</TableHead>
+              <TableHead className="w-1/5">생성일</TableHead>
+              <TableHead className="text-right w-1/5">관리</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {prompts.map((prompt) => (
+              <TableRow key={prompt.id}>
+                <TableCell className="font-medium">{prompt.title}</TableCell>
+                <TableCell>{prompt.user_id}</TableCell>
+                <TableCell>{prompt.created_at ? new Date(prompt.created_at).toLocaleDateString() : "-"}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="outline" size="sm" className="mr-2" onClick={() => handleEdit(prompt.id)}>
+                    수정
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(prompt.id)}>
+                    삭제
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

@@ -7,9 +7,9 @@ import EditPromptButton from "./EditPromptButton";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { promptSchema, Prompt } from "@/schemas/promptSchema";
+import { SupabaseClient } from "@supabase/supabase-js";
 
-async function getPrompt(id: string): Promise<Prompt | null> {
-  const supabase = createServerComponentClient({ cookies });
+async function getPrompt(supabase: SupabaseClient, id: string): Promise<Prompt | null> {
   const { data } = await supabase.from("prompts").select("*, categories(name)").eq("id", id).single();
 
   if (!data) return null;
@@ -25,9 +25,25 @@ async function getPrompt(id: string): Promise<Prompt | null> {
 
 export default async function PromptDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const supabase = createServerComponentClient({ cookies });
+
+  console.time("프롬프트 상세 페이지 전체 로딩");
 
   // 1. 사용자 정보 가져오기와 프롬프트 데이터 가져오기를 동시에 시작
-  const [authResult, prompt] = await Promise.all([auth(), getPrompt(id)]);
+  const [authResult, prompt] = await Promise.all([
+    (async () => {
+      console.time("auth() 실행 시간");
+      const result = await auth();
+      console.timeEnd("auth() 실행 시간");
+      return result;
+    })(),
+    (async () => {
+      console.time("getPrompt() 실행 시간");
+      const result = await getPrompt(supabase, id);
+      console.timeEnd("getPrompt() 실행 시간");
+      return result;
+    })(),
+  ]);
 
   // 2. 두 작업이 모두 끝나면 결과 처리
   const { userId } = authResult;
@@ -37,6 +53,8 @@ export default async function PromptDetailPage({ params }: { params: Promise<{ i
   }
 
   const isAuthor = userId === prompt.user_id;
+
+  console.timeEnd("프롬프트 상세 페이지 전체 로딩");
 
   return (
     <div className="max-w-2xl mx-auto py-10">
