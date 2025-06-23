@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useSession } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Prompt } from "@/schemas/promptSchema";
@@ -89,10 +89,7 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>취소</AlertDialogCancel>
-                        <AlertDialogAction
-                          className={buttonVariants({ variant: "destructive" })}
-                          onClick={() => handleDelete(prompt.id)}
-                        >
+                        <AlertDialogAction className="bg-red-500 text-white" onClick={() => handleDelete(prompt.id)}>
                           삭제
                         </AlertDialogAction>
                       </AlertDialogFooter>
