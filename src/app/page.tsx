@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import PromptCard from "@/app/prompt/PromptCard";
 import { TextScramble } from "@/components/ui/TextScramble";
 import { Prompt } from "@/schemas/promptSchema";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 // 최신 프롬프트 3개
-async function getPrompts(): Promise<Prompt[]> {
-  const supabase = createServerComponentClient({ cookies });
+async function getPrompts(supabase: SupabaseClient): Promise<Prompt[]> {
   const { data } = await supabase
     .from("prompts")
     .select("id, title, content, created_at, user_id, category_id, like_count")
@@ -18,9 +18,8 @@ async function getPrompts(): Promise<Prompt[]> {
   return data || [];
 }
 
-async function getLikeCounts(promptIds: string[]): Promise<Record<string, number>> {
+async function getLikeCounts(supabase: SupabaseClient, promptIds: string[]): Promise<Record<string, number>> {
   if (promptIds.length === 0) return {};
-  const supabase = createServerComponentClient({ cookies });
   const { data } = await supabase.from("likes").select("prompt_id");
   const counts: Record<string, number> = {};
   data?.forEach((row: { prompt_id: string }) => {
@@ -36,22 +35,26 @@ interface Category {
   name: string;
 }
 
-async function getCategories(): Promise<Category[]> {
-  const supabase = createServerComponentClient({ cookies });
+async function getCategories(supabase: SupabaseClient): Promise<Category[]> {
   const { data } = await supabase.from("categories").select("id, name");
   return data || [];
 }
 
 export default async function Home() {
+  const supabase = createServerComponentClient({ cookies });
+
   // 1. 필요한 데이터를 가져오는 Promise 배열 생성
-  const promptsPromise = getPrompts();
-  const categoriesPromise = getCategories();
+  const promptsPromise = getPrompts(supabase);
+  const categoriesPromise = getCategories(supabase);
 
   // 2. Promise.all로 데이터 요청 병렬 실행
   const [promptsData, categories] = await Promise.all([promptsPromise, categoriesPromise]);
 
   // 3. 프롬프트 데이터가 온 후에야 좋아요 수 요청
-  const likeCounts = await getLikeCounts(promptsData.map((p) => p.id));
+  const likeCounts = await getLikeCounts(
+    supabase,
+    promptsData.map((p) => p.id)
+  );
 
   // 4. 데이터 조합
   const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));

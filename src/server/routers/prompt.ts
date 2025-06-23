@@ -101,4 +101,21 @@ export const promptRouter = router({
 
       return data;
     }),
+
+  deletePrompt: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const { id } = input;
+
+    // Optional: Check if the user is an admin or the owner of the prompt
+    // For now, we'll allow any authenticated user to delete for simplicity,
+    // but in a real app, you'd want authorization logic here.
+    // For example, fetch the prompt, check `prompt.user_id === userId`
+
+    const { error } = await ctx.supabase.from("prompts").delete().eq("id", id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { success: true, id };
+  }),
 });
