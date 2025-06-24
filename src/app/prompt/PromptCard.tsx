@@ -48,19 +48,22 @@ export default function PromptCard({ prompt, className }: Props) {
   return (
     <Link
       href={`/prompt/${prompt.id}`}
-      className={`flex items-center gap-4 rounded-xl border border-gray-200 shadow-sm p-6 bg-white/90 hover:bg-white/95 transition min-w-[260px] ${className}`}
+      className={`relative flex items-center gap-4 rounded-xl border border-gray-200 shadow-sm p-6 bg-white/90 hover:bg-white/95 transition min-w-[260px] ${className}`}
     >
+      {/* 카테고리 뱃지 - 우측 상단 고정 */}
+      {prompt.category && (
+        <span className="absolute top-3 right-3 text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">
+          {prompt.category}
+        </span>
+      )}
+
       {/* 좌측 아이콘 */}
       <div className={`w-14 h-14 flex items-center justify-center rounded-lg ${style.color}`}>{style.icon}</div>
+
       {/* 우측 텍스트/뱃지 */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pr-8">
         <div className="flex items-center gap-2 mb-1">
           <span className="font-bold text-base truncate">{prompt.title}</span>
-          {prompt.category && (
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">
-              {prompt.category}
-            </span>
-          )}
           {prompt.likeCount && prompt.likeCount > 0 && (
             <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-pink-100 text-pink-600">
               <ThumbsUp className="size-4" />
@@ -69,9 +72,11 @@ export default function PromptCard({ prompt, className }: Props) {
           )}
         </div>
         <div className="text-gray-500 text-sm truncate">{prompt.content}</div>
-        <div className="flex justify-between text-xs text-gray-400 mt-2">
-          <span>작성자: {prompt.user_id}</span>
-          <span>{prompt.created_at?.slice(0, 10)}</span>
+        <div className="flex justify-between items-center text-xs text-gray-400 mt-2">
+          <span className="truncate flex-1 mr-2" title={`작성자: ${prompt.user_id}`}>
+            작성자: {prompt.user_id}
+          </span>
+          <span className="shrink-0">{prompt.created_at?.slice(0, 10)}</span>
         </div>
       </div>
     </Link>

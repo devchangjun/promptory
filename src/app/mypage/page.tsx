@@ -7,6 +7,7 @@ import MyLikedPrompts from "./MyLikedPrompts";
 import { MyPrompts } from "./MyPrompts";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default function MyPage() {
   const { user } = useUser();
@@ -30,17 +31,18 @@ export default function MyPage() {
       <EditNickname userId={user.id} currentNickname={user.username || ""} />
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">내 활동</h2>
-        {/* Tabs 컴포넌트가 추가될 때까지 임시로 제목과 컨텐츠를 나열합니다. */}
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">내가 작성한 프롬프트</h3>
+        <Tabs defaultValue="my-prompts" className="w-full">
+          <TabsList>
+            <TabsTrigger value="my-prompts">내가 작성한 프롬프트</TabsTrigger>
+            <TabsTrigger value="liked-prompts">내가 좋아요한 프롬프트</TabsTrigger>
+          </TabsList>
+          <TabsContent value="my-prompts">
             <MyPrompts userId={user.id} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold mb-2">내가 좋아요한 프롬프트</h3>
+          </TabsContent>
+          <TabsContent value="liked-prompts">
             <MyLikedPrompts />
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
