@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { FileText } from "lucide-react";
+import { FileText, Calendar, User } from "lucide-react";
 import { auth } from "@clerk/nextjs/server";
 import PromptContentWithCopy from "./PromptContentWithCopy";
 import PromptLikeButton from "./PromptLikeButton";
@@ -57,23 +57,50 @@ export default async function PromptDetailPage({ params }: { params: Promise<{ i
   console.timeEnd("프롬프트 상세 페이지 전체 로딩");
 
   return (
-    <div className="max-w-2xl mx-auto py-10">
-      <h1 className="text-2xl font-bold flex items-center gap-2 mb-4">
-        <FileText className="size-6" /> {prompt.title}
-        {prompt.category && (
-          <span className="ml-2 px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium border border-primary/20">
-            {prompt.category}
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          {userId && <PromptLikeButton promptId={prompt.id} />}
-          {isAuthor && <EditPromptButton promptId={prompt.id} />}
+    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* 헤더 섹션 */}
+      <div className="mb-8">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-3 leading-tight">{prompt.title}</h1>
+
+            {/* 카테고리와 메타 정보 */}
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+              {prompt.category && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all">
+                  <FileText className="size-3.5 mr-1.5" />
+                  {prompt.category}
+                </span>
+              )}
+
+              <div className="flex items-center gap-1">
+                <User className="size-4" />
+                <span>{prompt.user_id}</span>
+              </div>
+
+              {prompt.created_at && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="size-4" />
+                  <span>{new Date(prompt.created_at).toLocaleDateString("ko-KR")}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 액션 버튼들 */}
+          <div className="flex items-center gap-2 ml-4">
+            {userId && <PromptLikeButton promptId={prompt.id} />}
+            {isAuthor && <EditPromptButton promptId={prompt.id} />}
+          </div>
         </div>
-      </h1>
-      <PromptContentWithCopy content={prompt.content} />
-      <div className="flex gap-4 text-xs text-gray-400 mt-6">
-        <span>작성자: {prompt.user_id}</span>
-        <span>{prompt.created_at?.slice(0, 10)}</span>
+
+        {/* 구분선 */}
+        <div className="border-b border-gray-200 dark:border-gray-700"></div>
+      </div>
+
+      {/* 프롬프트 내용 */}
+      <div className="mb-8">
+        <PromptContentWithCopy content={prompt.content} />
       </div>
     </div>
   );
