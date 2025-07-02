@@ -11,6 +11,52 @@ export const promptRouter = router({
     return data || [];
   }),
 
+  // 프롬프트 상세 조회 (좋아요 수 포함)
+  getPromptById: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input, ctx }) => {
+    const { id } = input;
+
+    // 1. 프롬프트 데이터 조회
+    const { data: promptData, error: promptError } = await ctx.supabase
+      .from("prompts")
+      .select("id, title, content, created_at, user_id, category_id")
+      .eq("id", id)
+      .single();
+
+    if (promptError) throw promptError;
+    if (!promptData) return null;
+
+    // 2. 카테고리 정보 조회
+    let categoryName = undefined;
+    if (promptData.category_id) {
+      const { data: categoryData } = await ctx.supabase
+        .from("categories")
+        .select("name")
+        .eq("id", promptData.category_id)
+        .single();
+      categoryName = categoryData?.name;
+    }
+
+    // 3. 좋아요 수 조회
+    const { data: likesData } = await ctx.supabase.from("likes").select("id").eq("prompt_id", id);
+
+    return {
+      ...promptData,
+      category: categoryName,
+      likeCount: likesData?.length || 0,
+    };
+  }),
+
+  // 관리자용 프롬프트 목록 조회
+  getAllPromptsForAdmin: protectedProcedure.query(async ({ ctx }) => {
+    const { data, error } = await ctx.supabase
+      .from("prompts")
+      .select("id, title, content, user_id, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }),
+
   // 프롬프트 목록 조회 (필터링, 페이지네이션 지원)
   getPrompts: publicProcedure
     .input(
@@ -159,30 +205,6 @@ export const promptRouter = router({
         }))
       );
       return parsedData;
-    }),
-
-  getPromptById: publicProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .query(async ({ input, ctx }) => {
-      const { id } = input;
-      const { data, error } = await ctx.supabase.from("prompts").select("*, categories(name)").eq("id", id).single();
-
-      if (error) {
-        console.error(error);
-        return null;
-      }
-      if (!data) return null;
-
-      try {
-        return promptSchema.parse(data);
-      } catch (e) {
-        console.error("Invalid prompt data from DB:", e);
-        return null;
-      }
     }),
 
   createPrompt: protectedProcedure

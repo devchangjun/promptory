@@ -1,27 +1,31 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+"use client";
+
 import { FileText } from "lucide-react";
 import PromptForm from "./PromptForm";
+import { trpc } from "@/lib/trpc/client";
+import { FormSkeleton } from "@/components/ui/loading";
 
-interface Category {
-  id: string;
-  name: string;
-}
+export default function PromptNewPage() {
+  const { data: categories = [], isLoading, error } = trpc.prompt.getCategories.useQuery();
 
-async function getCategories(): Promise<Category[]> {
-  const supabase = createServerComponentClient({ cookies });
-  const { data } = await supabase.from("categories").select("id, name");
-  return data || [];
-}
+  if (error) {
+    return (
+      <div className="max-w-xl mx-auto py-10 px-4">
+        <div className="text-center py-20">
+          <p className="text-red-500 mb-4">카테고리를 불러오는데 실패했습니다.</p>
+          <p className="text-sm text-muted-foreground">잠시 후 다시 시도해주세요.</p>
+        </div>
+      </div>
+    );
+  }
 
-export default async function PromptNewPage() {
-  const categories = await getCategories();
   return (
-    <div className="max-w-xl mx-auto py-10">
+    <div className="max-w-xl mx-auto py-10 px-4">
       <h1 className="text-2xl font-bold flex items-center gap-2 mb-8">
         <FileText className="size-6" /> 프롬프트 작성
       </h1>
-      <PromptForm categories={categories} />
+
+      {isLoading ? <FormSkeleton /> : <PromptForm categories={categories} />}
     </div>
   );
 }

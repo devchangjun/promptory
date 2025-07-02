@@ -1,60 +1,37 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useParams } from "next/navigation";
 import { FileText, Calendar, User } from "lucide-react";
-import { auth } from "@clerk/nextjs/server";
+import { useAuth } from "@clerk/nextjs";
 import PromptContentWithCopy from "./PromptContentWithCopy";
 import PromptLikeButton from "./PromptLikeButton";
 import EditPromptButton from "./EditPromptButton";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-import { promptSchema, Prompt } from "@/schemas/promptSchema";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { trpc } from "@/lib/trpc/client";
+import { PromptDetailSkeleton } from "@/components/ui/loading";
 
-async function getPrompt(supabase: SupabaseClient, id: string): Promise<Prompt | null> {
-  const { data } = await supabase.from("prompts").select("*, categories(name)").eq("id", id).single();
+export default function PromptDetailPage() {
+  const params = useParams();
+  const id = params?.id as string;
+  const { userId } = useAuth();
 
-  if (!data) return null;
+  const { data: prompt, isLoading, error } = trpc.prompt.getPromptById.useQuery({ id }, { enabled: !!id });
 
-  try {
-    const promptData = { ...data, category: data.categories?.name };
-    return promptSchema.parse(promptData);
-  } catch (error) {
-    console.error("Invalid prompt data:", error);
-    return null;
+  if (isLoading) {
+    return <PromptDetailSkeleton />;
   }
-}
 
-export default async function PromptDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const supabase = createServerComponentClient({ cookies });
-
-  console.time("프롬프트 상세 페이지 전체 로딩");
-
-  // 1. 사용자 정보 가져오기와 프롬프트 데이터 가져오기를 동시에 시작
-  const [authResult, prompt] = await Promise.all([
-    (async () => {
-      console.time("auth() 실행 시간");
-      const result = await auth();
-      console.timeEnd("auth() 실행 시간");
-      return result;
-    })(),
-    (async () => {
-      console.time("getPrompt() 실행 시간");
-      const result = await getPrompt(supabase, id);
-      console.timeEnd("getPrompt() 실행 시간");
-      return result;
-    })(),
-  ]);
-
-  // 2. 두 작업이 모두 끝나면 결과 처리
-  const { userId } = authResult;
-
-  if (!prompt) {
-    return notFound();
+  if (error || !prompt) {
+    return (
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="text-center py-20">
+          <p className="text-red-500 mb-4">프롬프트를 찾을 수 없습니다.</p>
+          <p className="text-sm text-muted-foreground">삭제되었거나 존재하지 않는 프롬프트입니다.</p>
+        </div>
+      </div>
+    );
   }
 
   const isAuthor = userId === prompt.user_id;
-
-  console.timeEnd("프롬프트 상세 페이지 전체 로딩");
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

@@ -1,12 +1,30 @@
-import { currentUser } from "@clerk/nextjs/server";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-import { Prompt } from "@/schemas/promptSchema";
-import AdminPromptsClient from "./AdminPromptsClient";
+"use client";
 
-export default async function AdminPromptsPage() {
-  const user = await currentUser();
+import { useUser } from "@clerk/nextjs";
+import AdminPromptsClient from "./AdminPromptsClient";
+import { trpc } from "@/lib/trpc/client";
+import { TableSkeleton } from "@/components/ui/loading";
+
+export default function AdminPromptsPage() {
+  const { user } = useUser();
   const isAdmin = user?.publicMetadata?.role === "admin";
+
+  const {
+    data: prompts = [],
+    isLoading,
+    error,
+  } = trpc.prompt.getAllPromptsForAdmin.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-xl font-bold mb-2">로그인이 필요합니다</div>
+        <p className="text-muted-foreground">이 페이지를 보려면 로그인해주세요.</p>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
@@ -30,12 +48,23 @@ export default async function AdminPromptsPage() {
     );
   }
 
-  // Supabase 클라이언트 생성 (서비스 키 사용 권장, 여기선 anon key)
-  const supabase = createServerComponentClient({ cookies });
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-xl font-bold mb-2 text-red-500">데이터 로딩 실패</div>
+        <p className="text-muted-foreground">프롬프트 목록을 불러오는데 실패했습니다.</p>
+      </div>
+    );
+  }
 
-  const { data } = await supabase.from("prompts").select("id, title, content, user_id, created_at");
-
-  const prompts = (data as Prompt[]) || [];
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <h1 className="text-2xl font-bold mb-6">프롬프트 관리</h1>
+        <TableSkeleton rows={10} cols={5} />
+      </div>
+    );
+  }
 
   return <AdminPromptsClient prompts={prompts} />;
 }
