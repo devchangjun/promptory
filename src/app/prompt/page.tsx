@@ -9,6 +9,7 @@ import PromptCard from "./PromptCard";
 import { trpc } from "@/lib/trpc/client";
 import { useSearchParams } from "next/navigation";
 import { PromptListSkeleton } from "@/components/ui/loading";
+import { useRealtimePrompts } from "@/hooks/useRealtimePrompts";
 
 const PAGE_SIZE = 12;
 
@@ -25,6 +26,12 @@ function PromptPageContent() {
   const category = searchParams.get("category") || undefined;
   const q = searchParams.get("q") || undefined;
   const page = Number(searchParams.get("page")) || 1;
+
+  // 실시간 프롬프트 업데이트 구독
+  useRealtimePrompts({
+    enabled: true,
+    showToasts: true,
+  });
 
   // tRPC를 사용한 프롬프트 데이터 조회
   const { data, isLoading, error } = trpc.prompt.getPrompts.useQuery({

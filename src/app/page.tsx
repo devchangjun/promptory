@@ -7,8 +7,15 @@ import PromptCard from "@/app/prompt/PromptCard";
 import { TextScramble } from "@/components/ui/TextScramble";
 import { trpc } from "@/lib/trpc/client";
 import { PromptListSkeleton } from "@/components/ui/loading";
+import { useRealtimePrompts } from "@/hooks/useRealtimePrompts";
 
 export default function Home() {
+  // 실시간 프롬프트 업데이트 구독
+  useRealtimePrompts({
+    enabled: true,
+    showToasts: false, // 메인 페이지에서는 토스트 끄기
+  });
+
   // tRPC를 사용한 최적화된 데이터 fetching
   const { data: latestPrompts = [], isLoading, error } = trpc.prompt.getLatestPrompts.useQuery({ limit: 3 });
 

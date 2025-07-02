@@ -7,6 +7,7 @@ import { useSession } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Prompt } from "@/schemas/promptSchema";
 import { useRouter } from "next/navigation";
+import { useRealtimePrompts } from "@/hooks/useRealtimePrompts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
@@ -63,6 +64,12 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
 
   const { session } = useSession();
   const router = useRouter();
+
+  // 관리자용 실시간 업데이트 구독
+  useRealtimePrompts({
+    enabled: true,
+    showToasts: true, // 관리자는 모든 알림 표시
+  });
 
   const deleteMutation = trpc.prompt.deletePrompt.useMutation({
     onSuccess: (data) => {
