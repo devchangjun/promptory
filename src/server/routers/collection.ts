@@ -322,7 +322,7 @@ export const collectionRouter = router({
       .single();
 
     if (existing) {
-      throw new Error("이미 컬렉션에 추가된 프롬프트입니다.");
+      return { success: true, message: "이미 컬렉션에 추가된 프롬프트입니다." };
     }
 
     // 순서 인덱스 설정
