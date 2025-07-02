@@ -33,7 +33,6 @@ export const TextScramble: React.FC<TextScrambleProps> = ({ text, className }) =
     return () => {
       if (frame.current) cancelAnimationFrame(frame.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
   return (
