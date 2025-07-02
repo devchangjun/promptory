@@ -4,6 +4,7 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Home, FileText } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Header() {
   const { isSignedIn, user } = useUser();
@@ -22,6 +23,7 @@ export default function Header() {
         </Link>
       </nav>
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         {isSignedIn && user ? (
           <Link href="/mypage">
             <Avatar className="w-8 h-8 cursor-pointer">
