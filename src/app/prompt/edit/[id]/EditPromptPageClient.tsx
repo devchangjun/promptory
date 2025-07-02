@@ -52,8 +52,7 @@ export default function EditPromptPageClient({ id }: EditPromptPageClientProps) 
     if (session) {
       fetchPrompt();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, session, router]);
+  }, [id, session]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

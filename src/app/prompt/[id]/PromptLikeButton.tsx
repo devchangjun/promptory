@@ -35,8 +35,7 @@ export default function PromptLikeButton({ promptId }: Props) {
       setCount(count || 0);
     }
     fetchLike();
-    // eslint-disable-next-line
-  }, [promptId, isLoggedIn]);
+  }, [promptId, isLoggedIn, session]);
 
   async function handleLike() {
     if (!isLoggedIn) {

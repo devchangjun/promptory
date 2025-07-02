@@ -3,6 +3,44 @@ import { publicProcedure, router, protectedProcedure } from "../trpc";
 import { Prompt, promptSchema } from "@/schemas/promptSchema";
 
 export const promptRouter = router({
+  // 홈페이지용 최신 프롬프트 조회 (좋아요 수 포함)
+  getLatestPrompts: publicProcedure.input(z.object({ limit: z.number().default(3) })).query(async ({ input, ctx }) => {
+    const { limit } = input;
+
+    // 1. 최신 프롬프트 조회
+    const { data: promptsData, error: promptsError } = await ctx.supabase
+      .from("prompts")
+      .select("id, title, content, created_at, user_id, category_id")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (promptsError) throw promptsError;
+    if (!promptsData || promptsData.length === 0) return [];
+
+    // 2. 카테고리 정보 조회
+    const { data: categoriesData } = await ctx.supabase.from("categories").select("id, name");
+
+    // 3. 좋아요 수 조회 (최적화된 쿼리)
+    const promptIds = promptsData.map((p) => p.id);
+    const { data: likesData } = await ctx.supabase.from("likes").select("prompt_id").in("prompt_id", promptIds);
+
+    // 4. 데이터 조합
+    const categoryMap = Object.fromEntries((categoriesData || []).map((c) => [c.id, c.name]));
+
+    const likeCounts = (likesData || []).reduce((acc, like) => {
+      acc[like.prompt_id] = (acc[like.prompt_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const promptsWithDetails = promptsData.map((p) => ({
+      ...p,
+      category: p.category_id ? categoryMap[p.category_id] : undefined,
+      likeCount: likeCounts[p.id] || 0,
+    }));
+
+    return promptsWithDetails;
+  }),
+
   getMyPrompts: publicProcedure.input(z.object({ userId: z.string() })).query(async ({ input, ctx }) => {
     const { userId } = input;
     const { data, error } = await ctx.supabase
