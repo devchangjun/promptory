@@ -1,64 +1,16 @@
+"use client";
+
+import React, { Suspense } from "react";
 import { FileText, Plus } from "lucide-react";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import FilterBar from "./FilterBar";
-import { Suspense } from "react";
 import PromptCard from "./PromptCard";
-import { Prompt } from "@/schemas/promptSchema";
-
-interface Category {
-  id: string;
-  name: string;
-}
-
-async function getCategories(): Promise<Category[]> {
-  const supabase = createServerComponentClient({ cookies });
-  const { data } = await supabase.from("categories").select("id, name");
-  return data || [];
-}
+import { trpc } from "@/lib/trpc/client";
+import { useSearchParams } from "next/navigation";
+import { PromptListSkeleton } from "@/components/ui/loading";
 
 const PAGE_SIZE = 12;
-
-async function getPrompts({
-  category,
-  q,
-  page,
-}: {
-  category?: string;
-  q?: string;
-  page?: number;
-}): Promise<{ prompts: Prompt[]; total: number }> {
-  const supabase = createServerComponentClient({ cookies });
-
-  // RPC를 사용하여 프롬프트 목록과 좋아요 수를 함께 가져옵니다.
-  let query = supabase
-    .from("prompts")
-    .select("*, categories(name)", { count: "exact" })
-    .order("created_at", { ascending: false });
-
-  if (category) query = query.eq("category_id", category);
-  if (q) query = query.ilike("title", `%${q}%`);
-
-  const from = ((page || 1) - 1) * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
-  query = query.range(from, to);
-
-  const { data, count, error } = await query;
-
-  if (error) {
-    console.error("Error fetching prompts:", error);
-    return { prompts: [], total: 0 };
-  }
-
-  const prompts = data.map((p) => ({
-    ...p,
-    category: p.categories?.name,
-  }));
-
-  return { prompts: prompts || [], total: count || 0 };
-}
 
 function getPageUrl({ page, category, q }: { page: number; category?: string; q?: string }) {
   const params = new URLSearchParams();
@@ -68,21 +20,32 @@ function getPageUrl({ page, category, q }: { page: number; category?: string; q?
   return `/prompt${params.toString() ? `?${params}` : ""}`;
 }
 
-export default async function PromptPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string; q?: string; page?: string }>;
-}) {
-  const { category, q, page } = await searchParams;
-  const pageNumber = Number(page) || 1;
+function PromptPageContent() {
+  const searchParams = useSearchParams();
+  const category = searchParams.get("category") || undefined;
+  const q = searchParams.get("q") || undefined;
+  const page = Number(searchParams.get("page")) || 1;
 
-  // 데이터 요청 병렬 처리
-  const [{ prompts, total }, categories] = await Promise.all([
-    getPrompts({ category, q, page: pageNumber }),
-    getCategories(),
-  ]);
+  // tRPC를 사용한 프롬프트 데이터 조회
+  const { data, isLoading, error } = trpc.prompt.getPrompts.useQuery({
+    category,
+    q,
+    page,
+    pageSize: PAGE_SIZE,
+  });
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const { prompts = [], totalPages = 1 } = data || {};
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div className="text-center py-20">
+          <p className="text-red-500 mb-4">데이터를 불러오는데 실패했습니다.</p>
+          <Button onClick={() => window.location.reload()}>다시 시도</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
@@ -96,11 +59,14 @@ export default async function PromptPage({
           </Button>
         </Link>
       </div>
-      <Suspense fallback={<div className="mb-6">필터 로딩중...</div>}>
-        <FilterBar categories={categories} defaultCategory={category} defaultQ={q} />
-      </Suspense>
+
+      {/* 필터 바 */}
+      <FilterBar defaultCategory={category} defaultQ={q} />
+
       <div className="mt-8">
-        {prompts.length > 0 ? (
+        {isLoading ? (
+          <PromptListSkeleton count={PAGE_SIZE} />
+        ) : prompts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {prompts.map((prompt) => (
               <PromptCard key={prompt.id} prompt={prompt} />
@@ -112,31 +78,41 @@ export default async function PromptPage({
           </div>
         )}
       </div>
-      {totalPages > 1 && (
+
+      {/* 페이지네이션 */}
+      {!isLoading && totalPages > 1 && (
         <div className="flex justify-center mt-8 gap-2">
-          <Link href={getPageUrl({ page: Math.max(1, pageNumber - 1), category, q })}>
-            <Button variant="outline" size="sm" disabled={pageNumber === 1}>
+          <Link href={getPageUrl({ page: Math.max(1, page - 1), category, q })}>
+            <Button variant="outline" size="sm" disabled={page === 1}>
               이전
             </Button>
           </Link>
           {Array.from({ length: totalPages }).map((_, i) => (
             <Link key={i + 1} href={getPageUrl({ page: i + 1, category, q })}>
               <Button
-                variant={pageNumber === i + 1 ? "default" : "outline"}
+                variant={page === i + 1 ? "default" : "outline"}
                 size="sm"
-                className={pageNumber === i + 1 ? "font-bold" : ""}
+                className={page === i + 1 ? "font-bold" : ""}
               >
                 {i + 1}
               </Button>
             </Link>
           ))}
-          <Link href={getPageUrl({ page: Math.min(totalPages, pageNumber + 1), category, q })}>
-            <Button variant="outline" size="sm" disabled={pageNumber === totalPages}>
+          <Link href={getPageUrl({ page: Math.min(totalPages, page + 1), category, q })}>
+            <Button variant="outline" size="sm" disabled={page === totalPages}>
               다음
             </Button>
           </Link>
         </div>
       )}
     </div>
+  );
+}
+
+export default function PromptPage() {
+  return (
+    <Suspense fallback={<PromptListSkeleton count={PAGE_SIZE} />}>
+      <PromptPageContent />
+    </Suspense>
   );
 }

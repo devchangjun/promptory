@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import PromptCard from "@/app/prompt/PromptCard";
 import { TextScramble } from "@/components/ui/TextScramble";
 import { trpc } from "@/lib/trpc/client";
+import { PromptListSkeleton } from "@/components/ui/loading";
 
 export default function Home() {
   // tRPC를 사용한 최적화된 데이터 fetching
@@ -37,7 +38,7 @@ export default function Home() {
           </h2>
 
           <div className="flex flex-col gap-4">
-            {isLoading && <div className="text-muted-foreground">프롬프트를 불러오는 중...</div>}
+            {isLoading && <PromptListSkeleton count={3} />}
 
             {error && <div className="text-red-500">프롬프트를 불러오는데 실패했습니다.</div>}
 
@@ -45,9 +46,7 @@ export default function Home() {
               <p className="text-muted-foreground">프롬프트가 없습니다.</p>
             )}
 
-            {latestPrompts.map((prompt) => (
-              <PromptCard key={prompt.id} prompt={prompt} />
-            ))}
+            {!isLoading && latestPrompts.map((prompt) => <PromptCard key={prompt.id} prompt={prompt} />)}
           </div>
 
           {latestPrompts.length > 0 && (
