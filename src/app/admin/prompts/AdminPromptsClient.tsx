@@ -76,7 +76,7 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
 
   // 카테고리 목록 추출
   const categories = useMemo(() => {
-    const categorySet = new Set(prompts.map((p) => p.category).filter(Boolean));
+    const categorySet = new Set(prompts.map((p) => p.category).filter(Boolean) as string[]);
     return Array.from(categorySet);
   }, [prompts]);
 
@@ -364,7 +364,7 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
                       <div className="flex items-center justify-end gap-2">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => setDetailPrompt(prompt)}>
+                            <Button variant="ghost" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
@@ -405,7 +405,8 @@ export default function AdminPromptsClient({ prompts: initialPrompts }: AdminPro
                             <AlertDialogHeader>
                               <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                '{prompt.title}' 프롬프트가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                                &apos;{prompt.title}&apos; 프롬프트가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수
+                                없습니다.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
