@@ -1,9 +1,19 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// This example protects all routes including api/trpc routes
-// Please edit this to allow other routes to be public as needed.
-// See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your middleware
-export default clerkMiddleware();
+// 로그인하지 않은 사용자도 접근 가능한 공개 경로
+const isPublicRoute = createRouteMatcher([
+  "/", // 홈페이지
+  "/prompt", // 프롬프트 목록
+  "/prompt/(.*)", // 프롬프트 상세보기
+  "/api/trpc/(.*)", // tRPC API (여기서 개별적으로 권한 제어)
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // 공개 경로가 아닌 경우에만 인증 필요
+  if (!isPublicRoute(req)) {
+    await auth.protect();
+  }
+});
 
 export const config = {
   matcher: [

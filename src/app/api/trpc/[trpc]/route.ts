@@ -11,13 +11,20 @@ const handler = (req: Request) =>
     createContext: async () => {
       const authObj = await auth();
       const { userId, getToken } = authObj;
-      const supabaseToken = await getToken({ template: "supabase" });
+
+      // 로그인한 사용자의 경우 Supabase 토큰 사용, 아니면 기본 anon key 사용
+      let supabaseToken = null;
+      if (userId) {
+        try {
+          supabaseToken = await getToken({ template: "supabase" });
+        } catch (error) {
+          console.log("Failed to get Supabase token:", error);
+        }
+      }
 
       const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
         global: {
-          headers: {
-            Authorization: `Bearer ${supabaseToken}`,
-          },
+          headers: supabaseToken ? { Authorization: `Bearer ${supabaseToken}` } : {},
         },
       });
 
