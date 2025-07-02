@@ -10,22 +10,26 @@ export default function PromptNewPage() {
 
   if (error) {
     return (
-      <div className="max-w-xl mx-auto py-10 px-4">
-        <div className="text-center py-20">
-          <p className="text-red-500 mb-4">카테고리를 불러오는데 실패했습니다.</p>
-          <p className="text-sm text-muted-foreground">잠시 후 다시 시도해주세요.</p>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-xl mx-auto py-10 px-4">
+          <div className="text-center py-20">
+            <p className="text-red-500 mb-4">카테고리를 불러오는데 실패했습니다.</p>
+            <p className="text-sm text-muted-foreground">잠시 후 다시 시도해주세요.</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-xl mx-auto py-10 px-4">
-      <h1 className="text-2xl font-bold flex items-center gap-2 mb-8">
-        <FileText className="size-6" /> 프롬프트 작성
-      </h1>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-xl mx-auto py-10 px-4">
+        <h1 className="text-2xl font-bold flex items-center gap-2 mb-8 text-foreground">
+          <FileText className="size-6" /> 프롬프트 작성
+        </h1>
 
-      {isLoading ? <FormSkeleton /> : <PromptForm categories={categories} />}
+        {isLoading ? <FormSkeleton /> : <PromptForm categories={categories} />}
+      </div>
     </div>
   );
 }

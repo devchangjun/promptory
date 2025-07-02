@@ -38,81 +38,87 @@ function PromptPageContent() {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <div className="text-center py-20">
-          <p className="text-red-500 mb-4">데이터를 불러오는데 실패했습니다.</p>
-          <Button onClick={() => window.location.reload()}>다시 시도</Button>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-20">
+            <p className="text-red-500 mb-4">데이터를 불러오는데 실패했습니다.</p>
+            <Button onClick={() => window.location.reload()}>다시 시도</Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FileText className="size-8" /> 프롬프트 허브
-        </h1>
-        <Link href="/prompt/new">
-          <Button variant="default" className="gap-2">
-            <Plus className="size-4" /> 새 프롬프트
-          </Button>
-        </Link>
-      </div>
-
-      {/* 필터 바 */}
-      <FilterBar defaultCategory={category} defaultQ={q} />
-
-      <div className="mt-8">
-        {isLoading ? (
-          <PromptListSkeleton count={PAGE_SIZE} />
-        ) : prompts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {prompts.map((prompt) => (
-              <PromptCard key={prompt.id} prompt={prompt} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 text-muted-foreground">
-            <p>조건에 맞는 프롬프트가 없습니다.</p>
-          </div>
-        )}
-      </div>
-
-      {/* 페이지네이션 */}
-      {!isLoading && totalPages > 1 && (
-        <div className="flex justify-center mt-8 gap-2">
-          <Link href={getPageUrl({ page: Math.max(1, page - 1), category, q })}>
-            <Button variant="outline" size="sm" disabled={page === 1}>
-              이전
-            </Button>
-          </Link>
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <Link key={i + 1} href={getPageUrl({ page: i + 1, category, q })}>
-              <Button
-                variant={page === i + 1 ? "default" : "outline"}
-                size="sm"
-                className={page === i + 1 ? "font-bold" : ""}
-              >
-                {i + 1}
-              </Button>
-            </Link>
-          ))}
-          <Link href={getPageUrl({ page: Math.min(totalPages, page + 1), category, q })}>
-            <Button variant="outline" size="sm" disabled={page === totalPages}>
-              다음
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold flex items-center gap-2 text-foreground">
+            <FileText className="size-8" /> 프롬프트 허브
+          </h1>
+          <Link href="/prompt/new">
+            <Button variant="default" className="gap-2">
+              <Plus className="size-4" /> 새 프롬프트
             </Button>
           </Link>
         </div>
-      )}
+
+        {/* 필터 바 */}
+        <FilterBar defaultCategory={category} defaultQ={q} />
+
+        <div className="mt-8">
+          {isLoading ? (
+            <PromptListSkeleton count={PAGE_SIZE} />
+          ) : prompts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {prompts.map((prompt) => (
+                <PromptCard key={prompt.id} prompt={prompt} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 text-muted-foreground">
+              <p>조건에 맞는 프롬프트가 없습니다.</p>
+            </div>
+          )}
+        </div>
+
+        {/* 페이지네이션 */}
+        {!isLoading && totalPages > 1 && (
+          <div className="flex justify-center mt-8 gap-2">
+            <Link href={getPageUrl({ page: Math.max(1, page - 1), category, q })}>
+              <Button variant="outline" size="sm" disabled={page === 1}>
+                이전
+              </Button>
+            </Link>
+            {Array.from({ length: totalPages }).map((_, i) => (
+              <Link key={i + 1} href={getPageUrl({ page: i + 1, category, q })}>
+                <Button
+                  variant={page === i + 1 ? "default" : "outline"}
+                  size="sm"
+                  className={page === i + 1 ? "font-bold" : ""}
+                >
+                  {i + 1}
+                </Button>
+              </Link>
+            ))}
+            <Link href={getPageUrl({ page: Math.min(totalPages, page + 1), category, q })}>
+              <Button variant="outline" size="sm" disabled={page === totalPages}>
+                다음
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function PromptPage() {
   return (
-    <Suspense fallback={<PromptListSkeleton count={PAGE_SIZE} />}>
-      <PromptPageContent />
-    </Suspense>
+    <div className="min-h-screen bg-background">
+      <Suspense fallback={<PromptListSkeleton count={PAGE_SIZE} />}>
+        <PromptPageContent />
+      </Suspense>
+    </div>
   );
 }
