@@ -30,7 +30,7 @@ export default function AdminPromptsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <svg
-          className="size-10 text-destructive mb-4"
+          className="size-10 text-muted-foreground mb-4"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -51,7 +51,7 @@ export default function AdminPromptsPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="text-xl font-bold mb-2 text-red-500">데이터 로딩 실패</div>
+        <div className="text-xl font-bold mb-2 text-muted-foreground">데이터 로딩 실패</div>
         <p className="text-muted-foreground">프롬프트 목록을 불러오는데 실패했습니다.</p>
       </div>
     );

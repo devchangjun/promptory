@@ -4,6 +4,7 @@ import "./globals.css";
 import Provider from "@/lib/trpc/Provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "@/components/Header";
+import ThemeProvider from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -70,19 +71,20 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`min-h-screen ${geistSans.variable} ${geistMono.variable} antialiased font-[Pretendard, var(--font-geist-sans)]`}
+        className={`min-h-screen bg-background ${geistSans.variable} ${geistMono.variable} antialiased font-[Pretendard, var(--font-geist-sans)]`}
         style={{
           fontFamily: "Pretendard, var(--font-geist-sans), sans-serif",
-          background: "linear-gradient(45deg, var(--gradient-from), var(--gradient-via), var(--gradient-to))",
         }}
       >
-        <Provider>
-          <ClerkProvider>
-            <Header />
-            {children}
-            <Toaster />
-          </ClerkProvider>
-        </Provider>
+        <ThemeProvider>
+          <Provider>
+            <ClerkProvider>
+              <Header />
+              {children}
+              <Toaster />
+            </ClerkProvider>
+          </Provider>
+        </ThemeProvider>
       </body>
     </html>
   );

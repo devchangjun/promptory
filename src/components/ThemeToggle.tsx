@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useThemeStore, type Theme } from "@/store/themeStore";
@@ -14,11 +13,7 @@ const themeIcons = {
 };
 
 export default function ThemeToggle() {
-  const { theme, setTheme, initializeTheme } = useThemeStore();
-
-  useEffect(() => {
-    initializeTheme();
-  }, [initializeTheme]);
+  const { theme, setTheme } = useThemeStore();
 
   const toggleTheme = () => {
     const currentIndex = themes.indexOf(theme);

@@ -29,7 +29,7 @@ export default function PromptDetailPage() {
       <div className="min-h-screen bg-background">
         <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="text-center py-20">
-            <p className="text-red-500 mb-4">프롬프트를 찾을 수 없습니다.</p>
+            <p className="text-muted-foreground mb-4">프롬프트를 찾을 수 없습니다.</p>
             <p className="text-sm text-muted-foreground">삭제되었거나 존재하지 않는 프롬프트입니다.</p>
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function PromptDetailPage() {
               {/* 카테고리와 메타 정보 */}
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 {prompt.category && (
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-semibold shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-md bg-foreground text-background text-sm font-semibold shadow-sm hover:bg-muted-foreground transition-all">
                     <FileText className="size-3.5 mr-1.5" />
                     {prompt.category}
                   </span>

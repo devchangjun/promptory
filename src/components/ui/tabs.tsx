@@ -48,9 +48,10 @@ interface TabsTriggerProps {
   value: string;
   className?: string;
   children: React.ReactNode;
+  disabled?: boolean;
 }
 
-export function TabsTrigger({ value, className, children }: TabsTriggerProps) {
+export function TabsTrigger({ value, className, children, disabled = false }: TabsTriggerProps) {
   const context = useContext(TabsContext);
   if (!context) {
     throw new Error("TabsTrigger must be used within Tabs");
@@ -66,7 +67,8 @@ export function TabsTrigger({ value, className, children }: TabsTriggerProps) {
         isSelected ? "bg-background text-foreground shadow" : "hover:bg-muted hover:text-foreground",
         className
       )}
-      onClick={() => onValueChange(value)}
+      onClick={() => !disabled && onValueChange(value)}
+      disabled={disabled}
     >
       {children}
     </button>
