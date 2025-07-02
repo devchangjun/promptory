@@ -249,4 +249,59 @@ export const promptRouter = router({
 
     return { success: true, id };
   }),
+
+  // 좋아요 상태 조회
+  getLikeStatus: protectedProcedure.input(z.object({ promptId: z.string() })).query(async ({ ctx, input }) => {
+    const { promptId } = input;
+    const { userId } = ctx;
+
+    // 1. 현재 사용자의 좋아요 여부 확인
+    const { data: userLike } = await ctx.supabase
+      .from("likes")
+      .select("id")
+      .eq("prompt_id", promptId)
+      .eq("user_id", userId)
+      .single();
+
+    // 2. 전체 좋아요 수 조회
+    const { data: allLikes } = await ctx.supabase.from("likes").select("id").eq("prompt_id", promptId);
+
+    return {
+      isLiked: !!userLike,
+      likeCount: allLikes?.length || 0,
+    };
+  }),
+
+  // 좋아요 토글
+  toggleLike: protectedProcedure.input(z.object({ promptId: z.string() })).mutation(async ({ ctx, input }) => {
+    const { promptId } = input;
+    const { userId } = ctx;
+
+    // 현재 좋아요 상태 확인
+    const { data: existingLike } = await ctx.supabase
+      .from("likes")
+      .select("id")
+      .eq("prompt_id", promptId)
+      .eq("user_id", userId)
+      .single();
+
+    if (existingLike) {
+      // 좋아요 취소
+      const { error } = await ctx.supabase.from("likes").delete().eq("prompt_id", promptId).eq("user_id", userId);
+
+      if (error) throw new Error("좋아요 취소에 실패했습니다.");
+
+      return { isLiked: false, action: "removed" };
+    } else {
+      // 좋아요 추가
+      const { error } = await ctx.supabase.from("likes").insert({
+        prompt_id: promptId,
+        user_id: userId,
+      });
+
+      if (error) throw new Error("좋아요 추가에 실패했습니다.");
+
+      return { isLiked: true, action: "added" };
+    }
+  }),
 });

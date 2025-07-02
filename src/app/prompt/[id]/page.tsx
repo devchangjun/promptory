@@ -73,7 +73,7 @@ export default function PromptDetailPage() {
 
             {/* 액션 버튼들 */}
             <div className="flex items-center gap-2 ml-4">
-              {userId && <PromptLikeButton promptId={prompt.id} />}
+              {userId && <PromptLikeButton promptId={prompt.id} initialLikeCount={prompt.likeCount} />}
               {isAuthor && <EditPromptButton promptId={prompt.id} />}
             </div>
           </div>

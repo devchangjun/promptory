@@ -1,86 +1,98 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useSession } from "@clerk/nextjs";
-import { createClient } from "@supabase/supabase-js";
+import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { Heart } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc/client";
 
 interface Props {
   promptId: string;
+  initialLikeCount?: number;
 }
 
-export default function PromptLikeButton({ promptId }: Props) {
-  const { session } = useSession();
-  const [liked, setLiked] = useState(false);
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const isLoggedIn = !!session;
+export default function PromptLikeButton({ promptId, initialLikeCount = 0 }: Props) {
+  const { userId } = useAuth();
+  const utils = trpc.useContext();
 
-  useEffect(() => {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      accessToken: async () => session?.getToken() ?? null,
-    });
-    async function fetchLike() {
-      // 내 좋아요 여부
-      if (isLoggedIn) {
-        const { data } = await supabase.from("likes").select("id").eq("prompt_id", promptId).limit(1);
-        setLiked(!!data && data.length > 0);
-      }
-      // 전체 카운트
-      const { count } = await supabase
-        .from("likes")
-        .select("id", { count: "exact", head: true })
-        .eq("prompt_id", promptId);
-      setCount(count || 0);
+  // 좋아요 상태 조회 (인증된 사용자만)
+  const { data: likeStatus, isLoading: isLikeStatusLoading } = trpc.prompt.getLikeStatus.useQuery(
+    { promptId },
+    {
+      enabled: !!userId,
+      initialData: { isLiked: false, likeCount: initialLikeCount },
     }
-    fetchLike();
-  }, [promptId, isLoggedIn, session]);
+  );
 
-  async function handleLike() {
-    if (!isLoggedIn) {
+  // 좋아요 토글 뮤테이션
+  const toggleLikeMutation = trpc.prompt.toggleLike.useMutation({
+    onMutate: async () => {
+      // Optimistic update
+      await utils.prompt.getLikeStatus.cancel({ promptId });
+
+      const previousData = utils.prompt.getLikeStatus.getData({ promptId });
+
+      if (previousData) {
+        utils.prompt.getLikeStatus.setData(
+          { promptId },
+          {
+            isLiked: !previousData.isLiked,
+            likeCount: previousData.isLiked ? previousData.likeCount - 1 : previousData.likeCount + 1,
+          }
+        );
+      }
+
+      return { previousData };
+    },
+    onSuccess: (data) => {
+      toast.success(data.action === "added" ? "좋아요를 추가했습니다!" : "좋아요를 취소했습니다!");
+
+      // 관련된 쿼리들 무효화하여 데이터 동기화
+      utils.prompt.getPromptById.invalidate({ id: promptId });
+      utils.prompt.getPrompts.invalidate();
+      utils.prompt.getLatestPrompts.invalidate();
+    },
+    onError: (error, variables, context) => {
+      // Rollback optimistic update
+      if (context?.previousData) {
+        utils.prompt.getLikeStatus.setData({ promptId }, context.previousData);
+      }
+      toast.error(error.message || "좋아요 처리에 실패했습니다.");
+    },
+  });
+
+  const handleLike = () => {
+    if (!userId) {
       toast.error("로그인 후 좋아요를 누를 수 있습니다.");
       return;
     }
-    setLoading(true);
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      accessToken: async () => session?.getToken() ?? null,
-    });
-    if (liked) {
-      // 좋아요 취소
-      const { error } = await supabase.from("likes").delete().eq("prompt_id", promptId);
-      if (!error) {
-        setLiked(false);
-        setCount((c) => c - 1);
-      } else {
-        toast.error("좋아요 취소 실패");
-      }
-    } else {
-      // 좋아요 추가
-      const { error } = await supabase.from("likes").insert({ prompt_id: promptId });
-      if (!error) {
-        setLiked(true);
-        setCount((c) => c + 1);
-      } else {
-        toast.error("좋아요 실패");
-      }
-    }
-    setLoading(false);
-  }
+
+    toggleLikeMutation.mutate({ promptId });
+  };
+
+  // 로딩 상태
+  const isLoading = isLikeStatusLoading || toggleLikeMutation.isPending;
+
+  // 좋아요 상태 (로그인하지 않은 경우 초기값 사용)
+  const isLiked = userId ? likeStatus?.isLiked : false;
+  const likeCount = likeStatus?.likeCount || initialLikeCount;
 
   return (
     <Button
       type="button"
-      variant={liked ? "default" : "outline"}
+      variant={isLiked ? "default" : "outline"}
       size="sm"
       onClick={handleLike}
-      disabled={loading}
-      className="gap-1"
-      aria-label="좋아요"
+      disabled={isLoading}
+      className="gap-1.5 min-w-[60px]"
+      aria-label={isLiked ? "좋아요 취소" : "좋아요"}
     >
-      <Heart className={liked ? "fill-primary text-primary" : ""} />
-      {count > 0 && <span>{count}</span>}
-      <span className="sr-only">좋아요</span>
+      {isLoading ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <Heart className={`size-4 ${isLiked ? "fill-current" : ""}`} />
+      )}
+      {likeCount > 0 && <span className="text-sm font-medium">{likeCount}</span>}
+      <span className="sr-only">{isLiked ? "좋아요 취소" : "좋아요"}</span>
     </Button>
   );
 }
