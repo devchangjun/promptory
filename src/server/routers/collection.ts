@@ -9,14 +9,19 @@ import {
 export const collectionRouter = router({
   // 컬렉션 카테고리 목록 조회
   getCollectionCategories: publicProcedure.query(async ({ ctx }) => {
-    const { data, error } = await ctx.supabase
-      .from("collection_categories")
-      .select("id, name, description, icon_name")
-      .eq("is_active", true)
-      .order("display_order", { ascending: true });
+    try {
+      const { data, error } = await ctx.supabase
+        .from("collection_categories")
+        .select("id, name, description, icon_name")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
 
-    if (error) throw error;
-    return data || [];
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching collection categories:", error);
+      throw new Error("컬렉션 카테고리를 불러오는데 실패했습니다.");
+    }
   }),
 
   // 컬렉션 목록 조회 (필터링, 페이지네이션 지원)
@@ -32,55 +37,118 @@ export const collectionRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
-      const { category, q, page, pageSize, userId, onlyPublic } = input;
+      try {
+        const { category, q, page, pageSize, userId, onlyPublic } = input;
 
-      // 1. 컬렉션 조회 쿼리 구성
-      let query = ctx.supabase
-        .from("collections")
-        .select(
-          "id, name, description, user_id, is_public, category_id, view_count, like_count, prompt_count, created_at",
-          { count: "exact" }
-        )
-        .order("created_at", { ascending: false });
+        // Supabase 클라이언트 확인
+        if (!ctx.supabase) {
+          console.error("Supabase client not available in context");
+          throw new Error("데이터베이스 연결에 문제가 있습니다.");
+        }
 
-      // 필터링 조건 적용
-      if (onlyPublic) query = query.eq("is_public", true);
-      if (category) query = query.eq("category_id", category);
-      if (userId) query = query.eq("user_id", userId);
-      if (q) query = query.ilike("name", `%${q}%`);
+        // userId 검증 - UUID 형식이 아닌 Clerk ID 형식 허용
+        if (userId && typeof userId !== "string") {
+          throw new Error("유효하지 않은 사용자 ID입니다.");
+        }
 
-      // 페이지네이션 적용
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
+        console.log("getCollections called with:", { category, q, page, pageSize, userId, onlyPublic });
 
-      const { data: collectionsData, count, error: collectionsError } = await query;
+        // 1. 컬렉션 조회 쿼리 구성
+        let query = ctx.supabase
+          .from("collections")
+          .select(
+            "id, name, description, user_id, is_public, category_id, view_count, like_count, prompt_count, created_at",
+            { count: "exact" }
+          )
+          .order("created_at", { ascending: false });
 
-      if (collectionsError) throw collectionsError;
-      if (!collectionsData || collectionsData.length === 0) {
+        // 필터링 조건 적용
+        if (onlyPublic) query = query.eq("is_public", true);
+        if (category) query = query.eq("category_id", category);
+        if (userId) {
+          // Clerk user ID를 안전하게 처리
+          query = query.eq("user_id", userId);
+        }
+        if (q) query = query.ilike("name", `%${q}%`);
+
+        // 페이지네이션 적용
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+
+        console.log("Executing Supabase query...");
+        const { data: collectionsData, count, error: collectionsError } = await query;
+
+        if (collectionsError) {
+          console.error("Collections query error details:", {
+            error: collectionsError,
+            message: collectionsError.message,
+            details: collectionsError.details,
+            hint: collectionsError.hint,
+            code: collectionsError.code,
+          });
+          throw new Error(`데이터베이스 쿼리 오류: ${collectionsError.message}`);
+        }
+
+        console.log("Collections data retrieved:", { dataLength: collectionsData?.length, count });
+
+        if (!collectionsData || collectionsData.length === 0) {
+          return {
+            collections: [],
+            total: count || 0,
+            totalPages: Math.max(1, Math.ceil((count || 0) / pageSize)),
+          };
+        }
+
+        // 2. 카테고리 정보 조회
+        const { data: categoriesData, error: categoriesError } = await ctx.supabase
+          .from("collection_categories")
+          .select("id, name");
+
+        if (categoriesError) {
+          console.error("Categories query error:", categoriesError);
+          // 카테고리 오류는 치명적이지 않으므로 빈 배열로 계속 진행
+        }
+
+        // 3. 데이터 조합
+        const categoryMap = Object.fromEntries((categoriesData || []).map((c) => [c.id, c.name]));
+
+        const collections = collectionsData.map((collection) => ({
+          ...collection,
+          category: collection.category_id ? categoryMap[collection.category_id] : null,
+        }));
+
+        console.log("Successfully processed collections:", { collectionsCount: collections.length });
+
         return {
-          collections: [],
+          collections,
           total: count || 0,
           totalPages: Math.max(1, Math.ceil((count || 0) / pageSize)),
         };
+      } catch (error) {
+        console.error("Error in getCollections:", {
+          error,
+          message: error instanceof Error ? error.message : "Unknown error",
+          stack: error instanceof Error ? error.stack : undefined,
+          input,
+        });
+
+        // 사용자에게 더 친화적인 에러 메시지 제공
+        if (error instanceof Error) {
+          if (error.message.includes("uuid")) {
+            throw new Error("데이터베이스 연결에 문제가 있습니다. 잠시 후 다시 시도해 주세요.");
+          }
+          if (error.message.includes("JWT")) {
+            throw new Error("인증에 문제가 있습니다. 다시 로그인해 주세요.");
+          }
+          // 원본 에러 메시지가 한국어면 그대로 사용
+          if (error.message.includes("데이터베이스") || error.message.includes("쿼리")) {
+            throw error;
+          }
+        }
+
+        throw new Error("컬렉션을 불러오는데 실패했습니다.");
       }
-
-      // 2. 카테고리 정보 조회
-      const { data: categoriesData } = await ctx.supabase.from("collection_categories").select("id, name");
-
-      // 3. 데이터 조합
-      const categoryMap = Object.fromEntries((categoriesData || []).map((c) => [c.id, c.name]));
-
-      const collections = collectionsData.map((collection) => ({
-        ...collection,
-        category: collection.category_id ? categoryMap[collection.category_id] : null,
-      }));
-
-      return {
-        collections,
-        total: count || 0,
-        totalPages: Math.max(1, Math.ceil((count || 0) / pageSize)),
-      };
     }),
 
   // 컬렉션 상세 조회 (포함된 프롬프트 목록 포함)
