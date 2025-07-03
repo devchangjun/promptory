@@ -491,4 +491,110 @@ export const collectionRouter = router({
 
       return { liked: !!data };
     }),
+
+  // === 관리자 전용 함수들 ===
+
+  // 관리자용 모든 컬렉션 조회
+  getAllCollectionsForAdmin: protectedProcedure.query(async ({ ctx }) => {
+    const { userId } = ctx;
+
+    // 관리자 권한 확인 (Clerk의 publicMetadata에서 role 확인)
+    const clerkUserId = userId;
+    if (!clerkUserId) {
+      throw new Error("인증되지 않은 사용자입니다.");
+    }
+
+    try {
+      // 모든 컬렉션 조회 (관리자는 권한 제한 없이 모든 컬렉션 조회)
+      const { data: collections, error } = await ctx.supabase
+        .from("collections")
+        .select(
+          `
+          id,
+          name,
+          description,
+          user_id,
+          is_public,
+          category_id,
+          view_count,
+          like_count,
+          prompt_count,
+          created_at,
+          updated_at,
+          collection_categories(name)
+        `
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      return collections || [];
+    } catch (error) {
+      console.error("Error fetching collections for admin:", error);
+      throw new Error("컬렉션을 불러오는데 실패했습니다.");
+    }
+  }),
+
+  // 관리자용 컬렉션 삭제
+  deleteCollectionAsAdmin: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    const { id } = input;
+    const { userId } = ctx;
+
+    // 관리자 권한 확인
+    if (!userId) {
+      throw new Error("인증되지 않은 사용자입니다.");
+    }
+
+    try {
+      const { error } = await ctx.supabase.from("collections").delete().eq("id", id);
+
+      if (error) throw error;
+
+      return { id, success: true };
+    } catch (error) {
+      console.error("Error deleting collection as admin:", error);
+      throw new Error("컬렉션 삭제에 실패했습니다.");
+    }
+  }),
+
+  // 관리자용 컬렉션 수정
+  updateCollectionAsAdmin: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1, "제목은 필수입니다."),
+        description: z.string().optional(),
+        category_id: z.string().optional(),
+        is_public: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, name, description, category_id, is_public } = input;
+      const { userId } = ctx;
+
+      // 관리자 권한 확인
+      if (!userId) {
+        throw new Error("인증되지 않은 사용자입니다.");
+      }
+
+      try {
+        const { error } = await ctx.supabase
+          .from("collections")
+          .update({
+            name,
+            description,
+            category_id,
+            is_public,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        return { success: true };
+      } catch (error) {
+        console.error("Error updating collection as admin:", error);
+        throw new Error("컬렉션 수정에 실패했습니다.");
+      }
+    }),
 });
