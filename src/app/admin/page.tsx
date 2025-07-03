@@ -142,6 +142,12 @@ function QuickActionsCard() {
             프롬프트 관리
           </Button>
         </Link>
+        <Link href="/admin/collections">
+          <Button className="w-full justify-start" variant="outline">
+            <Layers className="h-4 w-4 mr-2" />
+            컬렉션 관리
+          </Button>
+        </Link>
         <Button className="w-full justify-start" variant="outline" disabled>
           <BarChart3 className="h-4 w-4 mr-2" />
           통계 보고서
@@ -156,6 +162,10 @@ export default function AdminPage() {
   const isAdmin = isSignedIn && user?.publicMetadata?.role === "admin";
 
   const { data: prompts = [] } = trpc.prompt.getAllPromptsForAdmin.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+
+  const { data: collections = [] } = trpc.collection.getAllCollectionsForAdmin.useQuery(undefined, {
     enabled: isAdmin,
   });
 
@@ -183,6 +193,11 @@ export default function AdminPage() {
   const totalPrompts = prompts.length;
   const todayPrompts = prompts.filter(
     (p) => p.created_at && new Date(p.created_at).toDateString() === new Date().toDateString()
+  ).length;
+
+  const totalCollections = collections.length;
+  const todayCollections = collections.filter(
+    (c) => c.created_at && new Date(c.created_at).toDateString() === new Date().toDateString()
   ).length;
 
   return (
@@ -223,7 +238,13 @@ export default function AdminPage() {
               change="+12% 지난 주 대비"
               trend="up"
             />
-            <StatsCard title="카테고리" value="12" icon={<Layers className="h-4 w-4" />} />
+            <StatsCard
+              title="컬렉션"
+              value={totalCollections}
+              icon={<Layers className="h-4 w-4" />}
+              change={`+${todayCollections} 오늘`}
+              trend={todayCollections > 0 ? "up" : "neutral"}
+            />
             <StatsCard
               title="이번 달 조회"
               value="2.4K"
@@ -251,7 +272,7 @@ export default function AdminPage() {
                   description="컬렉션 및 카테고리 관리"
                   icon={<Layers className="size-6 text-muted-foreground" />}
                   href="/admin/collections"
-                  disabled
+                  count={totalCollections}
                 />
                 <FeatureCard
                   title="유저 관리"
