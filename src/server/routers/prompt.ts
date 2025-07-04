@@ -120,6 +120,58 @@ export const promptRouter = router({
       };
     }),
 
+  // 홈페이지용 인기 프롬프트 조회 (좋아요 순)
+  getPopularPrompts: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().default(5),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const { limit } = input;
+
+      // 1. 좋아요가 많은 순으로 프롬프트 ID 조회
+      const { data: likesCountData, error: likesCountError } = await ctx.supabase.rpc("get_popular_prompt_ids", {
+        p_limit: limit,
+      });
+
+      if (likesCountError) throw likesCountError;
+      if (!likesCountData || likesCountData.length === 0) return [];
+
+      const promptIds = likesCountData.map((p: { prompt_id: string }) => p.prompt_id);
+
+      // 2. 해당 프롬프트 정보 조회
+      const { data: promptsData, error: promptsError } = await ctx.supabase
+        .from("prompts")
+        .select("id, title, content, created_at, user_id, category_id")
+        .in("id", promptIds);
+
+      if (promptsError) throw promptsError;
+
+      // 3. 카테고리 정보 조회
+      const { data: categoriesData } = await ctx.supabase.from("categories").select("id, name");
+      const categoryMap = Object.fromEntries((categoriesData || []).map((c) => [c.id, c.name]));
+
+      // 4. 좋아요 수 조회 (프롬프트 ID 기준)
+      const { data: likesData } = await ctx.supabase.from("likes").select("prompt_id").in("id", promptIds);
+      const likeCounts = (likesData || []).reduce((acc, like) => {
+        acc[like.prompt_id] = (acc[like.prompt_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // 5. 데이터 조합 및 정렬
+      const promptsWithDetails = promptsData
+        .map((p) => ({
+          ...p,
+          category: p.category_id ? categoryMap[p.category_id] : undefined,
+          likeCount: likeCounts[p.id] || 0,
+        }))
+        // Supabase `in` filter does not guarantee order, so we re-order here
+        .sort((a, b) => promptIds.indexOf(a.id) - promptIds.indexOf(b.id));
+
+      return promptsWithDetails;
+    }),
+
   // 홈페이지용 최신 프롬프트 조회 (좋아요 수 포함)
   getLatestPrompts: publicProcedure.input(z.object({ limit: z.number().default(3) })).query(async ({ input, ctx }) => {
     const { limit } = input;
